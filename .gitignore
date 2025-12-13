@@ -1,0 +1,19 @@
+# Object files
+*.o
+
+# Executables
+jag_physics_pc
+jag_physics_pc.exe
+
+# Temporary Output
+*.txt
+*.log
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
