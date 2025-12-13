@@ -10,7 +10,9 @@ A simple, lightweight, fixed-point 2D physics engine written in C, designed for 
   - Circle-to-Circle
   - AABB-to-AABB
   - Circle-to-AABB
+  - Circle-to-AABB
 - **Collision Resolution**: Impulse-based resolution with restitution (bounciness) and positional correction.
+- **Distance Constraints (Tethers)**: Supports massless, soft-constraint tethers between bodies (e.g., pendulums, bridges).
 - **Portable**: Written in pure C99.
 - **GPU-Ready**: Data structures aligned (16-byte) and logic isolated for easy offloading to the Jaguar's RISC processors.
 - **Dual Target**:
@@ -57,6 +59,10 @@ jp_body_t* ball = jp_world_add_body(&world,
     (jp_shape_t){.type = JP_SHAPE_CIRCLE, .radius = INT_TO_FIXED(10)}, 
     INT_TO_FIXED(160), INT_TO_FIXED(50), 
     INT_TO_FIXED(1)); // Mass 1
+
+// Add a tether connecting them (Pendulum)
+jp_world_add_tether(&world, ground, ball, INT_TO_FIXED(50)); // Max length 50
+
 ```
 
 Step the simulation:

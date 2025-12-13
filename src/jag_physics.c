@@ -28,35 +28,144 @@ jag_fixed_t jp_vec2_len_sqr(jp_vec2_t v) {
   return jp_vec2_dot(v, v);
 }
 
-jag_fixed_t jp_vec2_len(jp_vec2_t v) { return FIXED_SQRT(jp_vec2_len_sqr(v)); }
+// Safe length using 64-bit intermediates to support screen-width distances
+// dist_sqr for >181px overflows 32-bit fixed point.
+jag_fixed_t jp_vec2_len(jp_vec2_t v) {
+  int64_t x = v.x;
+  int64_t y = v.y;
+  int64_t sqr = (x * x) + (y * y); // 32.32 format essentially
+
+  // Sqrt logic for 64-bit input to 16.16 output
+  // dist = sqrt(x^2 + y^2)
+  // We want result in 16.16.
+  // Input 'sqr' is effectively (value * 65536)^2.
+  // Sqrt(sqr) = value * 65536.
+  // So standard integer sqrt of the 64-bit sum gives the correct fixed-point
+  // representation directly.
+
+  if (sqr <= 0)
+    return 0;
+
+  uint64_t root = 0;
+  uint64_t rem = (uint64_t)sqr;
+  uint64_t place = 1ULL << 62;
+
+  while (place > rem)
+    place >>= 2;
+
+  while (place) {
+    if (rem >= root + place) {
+      rem -= root + place;
+      root += place * 2;
+    }
+    root >>= 1;
+    place >>= 2;
+  }
+
+  return (jag_fixed_t)root;
+}
 
 // -- World --
 
 void jp_world_init(jp_world_t *world, jp_vec2_t gravity) {
-  world->body_count = 0;
   world->gravity = gravity;
+  world->body_count = 0;
+  world->tether_count = 0;
 }
 
 jp_body_t *jp_world_add_body(jp_world_t *world, jp_shape_t shape, jag_fixed_t x,
                              jag_fixed_t y, jag_fixed_t mass) {
-  if (world->body_count >= JP_MAX_BODIES)
-    return NULL;
+  if (world->body_count >= JP_MAX_BODIES) {
+    return 0;
+  }
   jp_body_t *b = &world->bodies[world->body_count++];
-  b->id = world->body_count;
   b->position = (jp_vec2_t){x, y};
   b->velocity = (jp_vec2_t){0, 0};
   b->force = (jp_vec2_t){0, 0};
   b->shape = shape;
-  b->mass = mass;
-  if (mass > 0) {
-    b->inv_mass = FIXED_DIV(JAG_FIXED_ONE, mass);
-    b->is_static = 0;
-  } else {
-    b->inv_mass = 0;
-    b->is_static = 1;
-  }
-  b->restitution = JAG_FIXED_HALF; // 0.5 default bounciness
+  b->inv_mass = (mass > 0) ? FIXED_DIV(JAG_FIXED_ONE, mass) : 0;
+  b->restitution = FIXED_DIV(INT_TO_FIXED(7), INT_TO_FIXED(10)); // 0.7
+  b->is_static = (mass == 0);
   return b;
+}
+
+void jp_world_add_tether(jp_world_t *world, jp_body_t *a, jp_body_t *b,
+                         jag_fixed_t max_length) {
+  if (world->tether_count >= JP_MAX_TETHERS)
+    return;
+  jp_tether_t *t = &world->tethers[world->tether_count++];
+  t->a = a;
+  t->b = b;
+  t->max_length_sqr = FIXED_MUL(max_length, max_length);
+}
+
+static void ResolveTethers(jp_world_t *world) {
+  for (int i = 0; i < world->tether_count; i++) {
+    jp_tether_t *t = &world->tethers[i];
+    jp_vec2_t diff = jp_vec2_sub(t->b->position, t->a->position);
+
+    // Optimization: Quick AABB rejection first
+    jag_fixed_t max_len = FIXED_SQRT(t->max_length_sqr);
+
+    // Quick rejection: if either component > max_len, we are definitely outside
+    if (FIXED_ABS(diff.x) <= max_len && FIXED_ABS(diff.y) <= max_len) {
+      // Safe to use squared checks if we wanted, but sticking to safe length.
+    }
+
+    // Calculate precise safe length (64-bit friendly)
+    jag_fixed_t dist = jp_vec2_len(diff);
+
+    if (dist <= max_len)
+      continue;
+
+    jag_fixed_t excess = FIXED_SUB(dist, max_len);
+
+    // Normalize diff to get direction: n = diff / dist
+    jp_vec2_t n = jp_vec2_mul(diff, FIXED_DIV(JAG_FIXED_ONE, dist));
+
+    // SOFT CONSTRAINT & STABILIZATION
+    const jag_fixed_t stiffness = INT_TO_FIXED(5) / 10; // 0.5
+    jag_fixed_t correction_mag = FIXED_MUL(excess, stiffness);
+
+    // Clamp correction
+    jag_fixed_t max_corr = INT_TO_FIXED(5);
+    if (correction_mag > max_corr)
+      correction_mag = max_corr;
+
+    jp_vec2_t move = jp_vec2_mul(n, correction_mag);
+
+    jag_fixed_t total_imass = FIXED_ADD(t->a->inv_mass, t->b->inv_mass);
+    if (total_imass == 0)
+      continue;
+
+    if (!t->a->is_static) {
+      jag_fixed_t share = FIXED_DIV(t->a->inv_mass, total_imass);
+      t->a->position = jp_vec2_add(t->a->position, jp_vec2_mul(move, share));
+
+      jag_fixed_t vrel =
+          jp_vec2_dot(jp_vec2_sub(t->b->velocity, t->a->velocity), n);
+      if (vrel > 0) {
+        // Apply impulse to kill relative velocity
+        // P = vrel / total_imass (magnitude of impulse)
+        // dV = P * inv_mass * n
+        jp_vec2_t P = jp_vec2_mul(n, FIXED_DIV(vrel, total_imass));
+        t->a->velocity =
+            jp_vec2_add(t->a->velocity, jp_vec2_mul(P, t->a->inv_mass));
+      }
+    }
+    if (!t->b->is_static) {
+      jag_fixed_t share = FIXED_DIV(t->b->inv_mass, total_imass);
+      t->b->position = jp_vec2_sub(t->b->position, jp_vec2_mul(move, share));
+
+      jag_fixed_t vrel =
+          jp_vec2_dot(jp_vec2_sub(t->b->velocity, t->a->velocity), n);
+      if (vrel > 0) {
+        jp_vec2_t P = jp_vec2_mul(n, FIXED_DIV(vrel, total_imass));
+        t->b->velocity =
+            jp_vec2_sub(t->b->velocity, jp_vec2_mul(P, t->b->inv_mass));
+      }
+    }
+  }
 }
 
 // --- Collision ---
@@ -204,36 +313,38 @@ void ResolveCollision(jp_manifold_t *m) {
         jp_vec2_add(m->b->position, jp_vec2_mul(correction, m->b->inv_mass));
 }
 
-void jp_world_step(jp_body_t *bodies, int body_count, jp_vec2_t gravity,
-                   jag_fixed_t dt, jp_contact_t *contacts, int *contact_count,
-                   int max_contacts) {
-  if (contact_count)
-    *contact_count = 0;
-
-  // Integrate
-  // TODO: Optimization - Unroll loop or use DSP for vector math
-  for (int i = 0; i < body_count; i++) {
-    jp_body_t *b = &bodies[i];
+void jp_world_step(jp_world_t *world, jag_fixed_t dt) {
+  for (int i = 0; i < world->body_count; i++) {
+    jp_body_t *b = &world->bodies[i];
     if (b->is_static)
       continue;
 
-    // Apply Gravity
-    b->velocity = jp_vec2_add(b->velocity, jp_vec2_mul(gravity, dt));
+    // Apply gravity
+    b->force = jp_vec2_add(
+        b->force,
+        jp_vec2_mul(world->gravity, FIXED_DIV(JAG_FIXED_ONE, b->inv_mass)));
 
-    // Update Position
+    // Integrate Velocity
+    jp_vec2_t acceleration = jp_vec2_mul(b->force, b->inv_mass);
+    b->velocity = jp_vec2_add(b->velocity, jp_vec2_mul(acceleration, dt));
+
+    // Integrate Position
     b->position = jp_vec2_add(b->position, jp_vec2_mul(b->velocity, dt));
+
+    // Reset force
+    b->force = (jp_vec2_t){0, 0};
   }
 
-  // Detect and Resolve Collisions
-  for (int i = 0; i < body_count; i++) {
-    for (int j = i + 1; j < body_count; j++) {
-      jp_body_t *a = &bodies[i];
-      jp_body_t *b = &bodies[j];
+  // Collisions
+  for (int i = 0; i < world->body_count; i++) {
+    for (int j = i + 1; j < world->body_count; j++) {
+      jp_manifold_t m = {0};
+      jp_body_t *a = &world->bodies[i];
+      jp_body_t *b = &world->bodies[j];
 
       if (a->is_static && b->is_static)
         continue;
 
-      jp_manifold_t m = {0};
       if (a->shape.type == JP_SHAPE_CIRCLE &&
           b->shape.type == JP_SHAPE_CIRCLE) {
         m = SolveCircleCircle(a, b);
@@ -246,24 +357,17 @@ void jp_world_step(jp_body_t *bodies, int body_count, jp_vec2_t gravity,
       } else if (a->shape.type == JP_SHAPE_AABB &&
                  b->shape.type == JP_SHAPE_CIRCLE) {
         m = SolveCircleAABB(b, a);
-        // Flip normal because we flipped bodies for calculation
         m.normal = jp_vec2_mul(m.normal, -JAG_FIXED_ONE);
-        m.a = a; // Ensure manifold points to original a/b
+        m.a = a;
         m.b = b;
       }
-      // Mixed shapes ignored for simplicity in this step
 
       if (m.has_collision) {
         ResolveCollision(&m);
-
-        // Record Contact
-        if (contacts && contact_count && *contact_count < max_contacts) {
-          contacts[*contact_count].body_a_id = a->id;
-          contacts[*contact_count].body_b_id = b->id;
-          contacts[*contact_count].normal = m.normal;
-          (*contact_count)++;
-        }
       }
     }
   }
+
+  // Tethers
+  ResolveTethers(world);
 }

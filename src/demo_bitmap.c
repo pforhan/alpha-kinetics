@@ -1,4 +1,5 @@
 #include "demo_bitmap.h"
+#include <stdlib.h>
 
 void demo_bitmap_clear(demo_bitmap_t *bmp, uint16_t color) {
   int size = bmp->width * bmp->height;
@@ -44,6 +45,28 @@ void demo_bitmap_draw_circle(demo_bitmap_t *bmp, int cx, int cy, int r,
       d = d + 4 * (x - y) + 10;
     } else {
       d = d + 4 * x + 6;
+    }
+  }
+}
+
+void demo_bitmap_draw_line(demo_bitmap_t *bmp, int x0, int y0, int x1, int y1,
+                           uint16_t color) {
+  int dx = abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+  int dy = -abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+  int err = dx + dy, e2;
+
+  while (1) {
+    demo_bitmap_draw_pixel(bmp, x0, y0, color);
+    if (x0 == x1 && y0 == y1)
+      break;
+    e2 = 2 * err;
+    if (e2 >= dy) {
+      err += dy;
+      x0 += sx;
+    }
+    if (e2 <= dx) {
+      err += dx;
+      y0 += sy;
     }
   }
 }

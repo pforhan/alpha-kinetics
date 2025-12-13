@@ -1,54 +1,85 @@
-# Jaguar Physics Engine Walkthrough
+# Refactoring Verification Walkthrough
 
-I have implemented a lightweight 2D physics engine in C, tailored for the Atari Jaguar's architecture.
+The codebase has been refactored to use a clear naming convention:
+*   `jp_` for Core Physics (`jag_physics`, `jag_fixed`)
+*   `jag_` for Platform/Hardware (`jag_platform`, `jag_gpu`)
+*   `demo_` for the Demo Application (`demo_main`, `demo_bitmap`)
 
-## Design Decisions
+## Verification Steps (WSL)
 
-1.  **Fixed-Point Arithmetic (`fixed_point.h`)**:
-    *   The Atari Jaguar's 68000 CPU does not have a Floating Point Unit (FPU).
-    *   I implemented a 16.16 fixed-point math library to ensure performance.
-    *   All physics calculations (position, velocity, collision) use `fixed_t` instead of `float`.
+Since you have WSL (Windows Subsystem for Linux) installed, verifying the build is straightforward.
 
-2.  **Core Physics (`physics.c`)**:
-    *   **Integration**: Uses Semi-Implicit Euler (Symplectic Euler) for stability.
-    *   **Collision Detection**:
-        *   **Circle-Circle**: Fast distance check.
-        *   **AABB-AABB**: Fast axis overlap check.
-    *   **Resolution**: Impulse-based resolution handles bouncing and mass ratios correctly.
+### 1. Build the Project
+Run the following command in your terminal (PowerShell or Command Prompt) to compile the code using WSL's `gcc`:
 
-3.  **GPU Readiness (Refactored)**:
-    *   **Data Alignment**: `Body` structs are padded to 64 bytes (16-byte aligned) for efficient DMA transfers to GPU RAM.
-    *   **Logic Isolation**: `World_Step` operates on a raw array of bodies, removing dependencies on the `World` struct layout. This allows the function to be easily moved to the GPU.
+```powershell
+wsl make clean; wsl make
+```
 
-4.  **GPU Interface (`gpu_interface.h`)**:
-    *   Provides `GPU_Run` and `GPU_Wait` helpers to abstract the offloading process.
-    *   Allows the main CPU (68k) to dispatch physics tasks to the GPU (RISC) and synchronize results.
+You should see output similar to:
+```text
+rm -f jag_physics_pc *.o
+gcc -Wall -O2 -Isrc -o jag_physics_pc src/demo_main.c src/jag_physics.c src/demo_bitmap.c src/jag_gpu.c
+```
 
-5.  **Collision Events**:
-    *   `World_Step` now returns a list of `Contact` events.
-    *   Allows client code to react to specific collisions (e.g., deleting objects) without modifying the core engine.
+### 2. Run the Demo
+Run the compiled executable:
 
-6.  **Hardware Abstraction (`jaguar.h`)**:
-    *   Defined memory-mapped I/O addresses for the Jaguar's TOM and JERRY chips.
-    *   This allows the code to compile for the target hardware while being readable.
+```powershell
+wsl ./jag_physics_pc
+```
 
-4.  **Demo Application (`main.c`)**:
-    *   **Dual-Mode**:
-        *   `#ifdef JAGUAR`: Writes directly to the Jaguar's framebuffer in DRAM.
-        *   `#else` (PC): Runs a simulation loop and prints an ASCII representation of the world to the terminal.
-    *   This allows you to verify logic on a PC before deploying to the console.
+**Note**: The demo now runs in an infinite loop (~60 FPS). Press `Ctrl+C` to stop it.
 
-## Files
+### 3. Expected Output
+The demo runs a physics simulation (falling circle and box).
+*   **Characters**:
+    *   `O` = Dynamic Body (Circle)
+    *   `[` = Dynamic Body (AABB / Box)
+    *   `#` = Static Body (Ground / AABB)
+*   **Behavior**:
+    1.  The Circle (`O`) falls and hits the Ground (`#`).
+    2.  Collision is detected (Circle vs AABB).
+    3.  A message "Collision Event: Circle hit Ground! Deleting Circle..." appears.
+    4.  The Circle disappears.
+    5.  The Box (`[`) continues to bounce on the Ground.
 
-- `src/fixed_point.h`: Math library.
-- `src/physics.h` / `src/physics.c`: The engine.
-- `src/bitmap.h` / `src/bitmap.c`: Graphics drawing.
-- `src/jaguar.h`: Hardware definitions.
-- `src/main.c`: The demo app.
-- `Makefile`: Build script.
+Example ASCII Frame:
+```text
+........................................
+........................................
+...................O....................
+........................................
+........................................
+..................[[[...................
+..................[[[...................
+........................................
+........................................
+........................................
+#######.................................
+```
 
-## Next Steps
+## Changes made
+*   Renamed `src/physics.c` -> `src/jag_physics.c`
+*   Renamed `src/gpu_interface.c` -> `src/jag_gpu.c`
+*   Renamed `src/main.c` -> `src/demo_main.c`
+*   Refactored all code to use `jp_` and `jag_` prefixes.
+*   Updated `demo_main.c` to run indefinitely on PC with a frame delay for better visibility.
+*   **Fixed Physics**: Added `SolveCircleAABB` to correctly handle Circle-Ground collisions.
+*   **Fixed Visuals**: Updated ASCII renderer to fill shapes (rectangles and rough circles) instead of just single points.
+*   **Fixed Stability**: Resolved Floating Point Exception (crash) caused by integer overflow in distance squared calculation. Initially added a safety check with `LIMIT=10M`, but later reduced to `LIMIT=5M` to prevent `x*x + y*y` from overflowing signed 32-bit integer max value (which caused invalid negative results and subsequent division by zero).
+*   **Fixed Collision Logic**: Corrected inverted collision normal in `SolveCircleAABB` which caused objects to pass through each other in certain valid collision scenarios (like top-down stacking).
+*   **Added Tethers**: Implemented a distance constraint (tether) system.
+    - Added `jp_tether_t` struct and `jp_world_add_tether`.
+    - Added `ResolveTethers` step to the physics solver.
+    - Added a pendulum demo to `demo_main.c` to visualize the tether.
+    - **Stability Fix**: Implemented a "soft constraint" approach (0.5 stiffness) and clamped maximum position correction per frame to prevent energy injection (explosions) when the tether snaps taut.
+    - **Overflow Fix**: Implemented `jp_vec2_len` using 64-bit intermediate calculations to correctly handle distances > 181 pixels (which previously overflowed 32-bit fixed point), removing the artificial `LIMIT` that caused physics explosions on screen-width movements.
+    - **Velocity Logic Fix**: Corrected a math error in `ResolveTethers` where the correction impulse was being divided by `total_imass` twice (once in calculation, once in application), causing a 5x positive feedback loop in velocity that led to "snapping" and "disappearing" bodies at the apex of the swing.
 
-- **Compilation**: Use your Jaguar GCC toolchain (e.g., `m68k-atari-jaguar-gcc`) to compile the project.
-- **Optimization**: Move the `World_Step` function to the GPU (RISC) for parallel processing.
-- **Graphics**: Replace the software `Bitmap_Draw` functions with Blitter commands (`BLIT_CMD`) for hardware acceleration.
+### Demo Expansion
+The `jag_physics_pc` demo now features a complex scene demonstrating multiple interaction types:
+1.  **Anchored Pendulum**: Validates static-dynamic tether constraints.
+2.  **Tri-Bolas**: A chain of 3 dynamic bodies connected by tethers, validating dynamic-dynamic constraints and momentum transfer (spinning/tumbling).
+3.  **Free Falling Objects**: A Box and a Circle to demonstrate independent physics integration alongside tethers.
+4.  **Ground Plane**: A static AABB at the bottom to catch objects.

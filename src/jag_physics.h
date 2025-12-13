@@ -4,6 +4,7 @@
 #include "jag_fixed.h"
 
 #define JP_MAX_BODIES 64
+#define JP_MAX_TETHERS 16
 
 typedef struct {
   jag_fixed_t x, y;
@@ -37,15 +38,23 @@ typedef struct {
 } jp_body_t;
 
 typedef struct {
+  jp_body_t *a;
+  jp_body_t *b;
+  jag_fixed_t max_length_sqr;
+} jp_tether_t;
+
+typedef struct {
   int body_a_id;
   int body_b_id;
   jp_vec2_t normal;
 } jp_contact_t;
 
 typedef struct {
+  jp_vec2_t gravity;
   jp_body_t bodies[JP_MAX_BODIES];
   int body_count;
-  jp_vec2_t gravity;
+  jp_tether_t tethers[JP_MAX_TETHERS];
+  int tether_count;
 } jp_world_t;
 
 // Vector Math
@@ -60,10 +69,7 @@ jag_fixed_t jp_vec2_len(jp_vec2_t v);
 void jp_world_init(jp_world_t *world, jp_vec2_t gravity);
 jp_body_t *jp_world_add_body(jp_world_t *world, jp_shape_t shape, jag_fixed_t x,
                              jag_fixed_t y, jag_fixed_t mass);
-// Updated to take raw array for GPU offloading compatibility and return
-// contacts
-void jp_world_step(jp_body_t *bodies, int body_count, jp_vec2_t gravity,
-                   jag_fixed_t dt, jp_contact_t *contacts, int *contact_count,
-                   int max_contacts);
-
+void jp_world_add_tether(jp_world_t *world, jp_body_t *a, jp_body_t *b,
+                         jag_fixed_t max_length);
+void jp_world_step(jp_world_t *world, jag_fixed_t dt);
 #endif // JAG_PHYSICS_H

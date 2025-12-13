@@ -55,6 +55,16 @@ void RenderWorld(jp_world_t *world) {
                             b->is_static ? COL_GREEN : COL_WHITE);
     }
   }
+
+  // Draw Tethers
+  for (int i = 0; i < world->tether_count; i++) {
+    jp_tether_t *t = &world->tethers[i];
+    int x1 = FIXED_TO_INT(t->a->position.x);
+    int y1 = FIXED_TO_INT(t->a->position.y);
+    int x2 = FIXED_TO_INT(t->b->position.x);
+    int y2 = FIXED_TO_INT(t->b->position.y);
+    demo_bitmap_draw_line(&screen, x1, y1, x2, y2, COL_WHITE);
+  }
 }
 
 // Simple ASCII renderer for PC terminal
@@ -124,52 +134,21 @@ void PrintASCII(jp_world_t *world) {
     }
     putchar('\n');
   }
-  printf("Bodies: %d\n", world->body_count);
 }
 
 #include "jag_gpu.h"
 
+#include <stddef.h> // for NULL
+
 // Wrapper for GPU execution
 typedef struct {
-  jp_body_t *bodies;
-  int body_count;
-  jp_vec2_t gravity;
+  jp_world_t *world;
   jag_fixed_t dt;
-  jp_contact_t *contacts;
-  int *contact_count;
-  int max_contacts;
 } PhysicsArgs;
 
 void PhysicsWrapper(void *data) {
   PhysicsArgs *args = (PhysicsArgs *)data;
-  jp_world_step(args->bodies, args->body_count, args->gravity, args->dt,
-                args->contacts, args->contact_count, args->max_contacts);
-}
-
-void HandleDemoCollisions(jp_world_t *world, jp_contact_t *contacts,
-                          int contact_count, int circle_id, int ground_id) {
-  for (int k = 0; k < contact_count; k++) {
-    jp_contact_t *c = &contacts[k];
-    // Check if circle hit the ground
-    if ((c->body_a_id == circle_id && c->body_b_id == ground_id) ||
-        (c->body_b_id == circle_id && c->body_a_id == ground_id)) {
-
-      printf("Collision Event: Circle hit Ground! Deleting Circle...\n");
-
-      // Find and Delete Circle
-      for (int b = 0; b < world->body_count; b++) {
-        if (world->bodies[b].id == circle_id) {
-          // Swap with last and pop
-          world->bodies[b] = world->bodies[world->body_count - 1];
-          world->body_count--;
-          break;
-        }
-      }
-    } else if (c->body_a_id == circle_id || c->body_b_id == circle_id) {
-      printf("Collision Event: Circle hit Body ID %d or %d!\n", c->body_a_id,
-             c->body_b_id);
-    }
-  }
+  jp_world_step(args->world, args->dt);
 }
 
 int main() {
@@ -177,75 +156,98 @@ int main() {
   jag_gpu_init();
 
   jp_world_t world;
-  jp_world_init(&world, (jp_vec2_t){0, INT_TO_FIXED(100)}); // Gravity down
-
-  // Ground
-  jp_body_t *ground = jp_world_add_body(
+  jp_world_init(
       &world,
-      (jp_shape_t){JP_SHAPE_AABB,
-                   .bounds.aabb = {INT_TO_FIXED(100), INT_TO_FIXED(10)}},
-      INT_TO_FIXED(160), INT_TO_FIXED(220), 0);
-  int ground_id = ground->id;
+      (jp_vec2_t){0, INT_TO_FIXED(50)}); // Gravity down (lighter for pendulum)
 
-  // Falling Circle
-  jp_body_t *circle = jp_world_add_body(
-      &world,
-      (jp_shape_t){JP_SHAPE_CIRCLE, .bounds.circle = {INT_TO_FIXED(10)}},
-      INT_TO_FIXED(169), INT_TO_FIXED(0), INT_TO_FIXED(1));
-  // circle->velocity.y = INT_TO_FIXED(50); // Initial push to catch the box
-  int circle_id = circle->id;
+  // Scenario: Complex Demo
 
-  // Falling Box
+  // 1. Ground (Static AABB)
+  // Positioned at bottom center (160, 230), Width 320 (Half 160), Height 20
+  // (Half 10)
   jp_world_add_body(
       &world,
-      (jp_shape_t){JP_SHAPE_AABB,
+      (jp_shape_t){.type = JP_SHAPE_AABB,
+                   .bounds.aabb = {INT_TO_FIXED(160), INT_TO_FIXED(10)}},
+      INT_TO_FIXED(160), INT_TO_FIXED(230), 0);
+
+  // 2. Anchored Pendulum (Center)
+  jp_body_t *anchor = jp_world_add_body(
+      &world,
+      (jp_shape_t){.type = JP_SHAPE_CIRCLE, .bounds.circle = {INT_TO_FIXED(2)}},
+      INT_TO_FIXED(160), INT_TO_FIXED(40), 0); // Static
+
+  jp_body_t *bob = jp_world_add_body(
+      &world,
+      (jp_shape_t){.type = JP_SHAPE_CIRCLE,
+                   .bounds.circle = {INT_TO_FIXED(10)}},
+      INT_TO_FIXED(220), INT_TO_FIXED(40), INT_TO_FIXED(5)); // Mass 5
+
+  jp_world_add_tether(&world, anchor, bob, INT_TO_FIXED(60));
+
+  // 3. Free Falling Box (Left)
+  jp_world_add_body(
+      &world,
+      (jp_shape_t){.type = JP_SHAPE_AABB,
                    .bounds.aabb = {INT_TO_FIXED(10), INT_TO_FIXED(10)}},
-      INT_TO_FIXED(180), INT_TO_FIXED(30), INT_TO_FIXED(100));
+      INT_TO_FIXED(60), INT_TO_FIXED(50), INT_TO_FIXED(2));
+
+  // 4. Free Falling Circle (Right)
+  jp_world_add_body(&world,
+                    (jp_shape_t){.type = JP_SHAPE_CIRCLE,
+                                 .bounds.circle = {INT_TO_FIXED(12)}},
+                    INT_TO_FIXED(260), INT_TO_FIXED(30), INT_TO_FIXED(2));
+
+  // 5. Tethered trio (Bolas) - Falling Mid-Air
+  jp_body_t *b1 = jp_world_add_body(
+      &world,
+      (jp_shape_t){.type = JP_SHAPE_CIRCLE, .bounds.circle = {INT_TO_FIXED(8)}},
+      INT_TO_FIXED(100), INT_TO_FIXED(80), INT_TO_FIXED(3));
+
+  jp_body_t *b2 = jp_world_add_body(
+      &world,
+      (jp_shape_t){.type = JP_SHAPE_CIRCLE, .bounds.circle = {INT_TO_FIXED(8)}},
+      INT_TO_FIXED(130), INT_TO_FIXED(80), INT_TO_FIXED(3));
+
+  // 3rd body for dramatic effect (Tri-Bolas / Chain)
+  jp_body_t *b3 = jp_world_add_body(
+      &world,
+      (jp_shape_t){.type = JP_SHAPE_CIRCLE, .bounds.circle = {INT_TO_FIXED(6)}},
+      INT_TO_FIXED(160), INT_TO_FIXED(60),
+      INT_TO_FIXED(2)); // Smaller, lighter, off to side
+
+  // Give them some spin! b1 moves left, b2 moves right
+  b2->velocity.x = INT_TO_FIXED(20);
+
+  jp_world_add_tether(&world, b1, b2, INT_TO_FIXED(40));
+  jp_world_add_tether(&world, b2, b3, INT_TO_FIXED(40)); // Chain: b1-b2-b3
 
   jag_fixed_t dt = INT_TO_FIXED(1) / 60; // 1/60th second
 
-  jp_contact_t contacts[16];
-  int contact_count = 0;
-  PhysicsArgs args = {world.bodies,
-                      world.body_count,
-                      world.gravity,
-                      dt,
-                      contacts,
-                      &contact_count,
-                      16};
+  PhysicsArgs args = {&world, dt};
 
-#ifdef JAGUAR
-  while (1) {
-    // Offload physics to GPU (simulated on 68k for now)
-    args.body_count = world.body_count; // Update count if changed
-    jag_gpu_run(PhysicsWrapper, &args, sizeof(PhysicsArgs));
-
-    // While GPU runs, we could do other things (like audio setup)
-    jag_gpu_wait();
-
-    // Process Collisions
-    HandleDemoCollisions(&world, contacts, contact_count, circle_id, ground_id);
-
-    RenderWorld(&world);
-    // Wait for VSync
-  }
-#else
   // Run infinite loop on PC for demo
   while (1) {
     // Offload physics
-    args.body_count = world.body_count;
     jag_gpu_run(PhysicsWrapper, &args, sizeof(PhysicsArgs));
     jag_gpu_wait();
 
-    // Process Collision Events
-    HandleDemoCollisions(&world, contacts, contact_count, circle_id, ground_id);
+    // Render (ASCII)
+    // Clear
+    printf("\033[H\033[J");
 
-    // RenderWorld(&world); // We don't see this on PC but it tests the code
+    // Draw directly from demo_main since we have custom drawing logic here
+    // Check collision events if needed (not for pendulum currently)
+    // HandleDemoCollisions(&world, ...);
+
+    // Actually PrintASCII does the drawing. Let's rely on that.
     PrintASCII(&world);
 
-    usleep(16666); // ~60 FPS (16.6ms)
+    printf("Bodies: %d, Tethers: %d\n", world.body_count, world.tether_count);
+
+    // 60 FPS delay
+    usleep(16666);
   }
-#endif
 
   return 0;
 }
