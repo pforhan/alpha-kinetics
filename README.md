@@ -27,6 +27,12 @@ A simple, lightweight, fixed-point 2D physics engine written in C, designed for 
 - `src/jag_platform.h`: Platform-specific definitions.
 - `src/demo_bitmap.c` / `.h`: Simple graphics routines for the framebuffer (used in demo).
 
+## Development Environment
+
+This project includes a **Devcontainer** configuration for VS Code.
+- It automatically instantiates a Docker container with the [cubanismo/jaguar-sdk](https://github.com/cubanismo/jaguar-sdk).
+- Opening the folder in VS Code and choosing "Reopen in Container" will provide a terminal with `m68k-atari-jaguar-gcc` pre-installed.
+
 ## Building
 
 ### For PC (Simulation)

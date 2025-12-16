@@ -1,0 +1,12 @@
+{
+  "name": "Jaguar SDK (cubanismo)",
+  "image": "cubanismo/jaguar-sdk:latest",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools"
+      ]
+    }
+  },
+  "remoteUser": "root"
+}
