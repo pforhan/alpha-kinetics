@@ -231,19 +231,19 @@ int main() {
 
   PhysicsArgs args = {&world, dt};
 
-  // Run infinite loop on PC for demo
+  // Run infinite loop
   while (1) {
     // Offload physics
     jag_gpu_run(PhysicsWrapper, &args, sizeof(PhysicsArgs));
     jag_gpu_wait();
 
-    // Render (ASCII)
+#ifdef JAGUAR
+    RenderWorld(&world);
+    // VSYNC would go here or just wait
+#else
+    // PC Simulation: Render (ASCII)
     // Clear
     printf("\033[H\033[J");
-
-    // Draw directly from demo_main since we have custom drawing logic here
-    // Check collision events if needed (not for pendulum currently)
-    // HandleDemoCollisions(&world, ...);
 
     // Actually PrintASCII does the drawing. Let's rely on that.
     PrintASCII(&world);
@@ -252,6 +252,7 @@ int main() {
 
     // 60 FPS delay
     usleep(16666);
+#endif
   }
 
   return 0;

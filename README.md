@@ -37,6 +37,13 @@ make
 ```
 This will run the physics simulation and output ASCII frames to the terminal.
 
+### For Jaguar (Console)
+Requires `m68k-atari-jaguar-gcc` in your PATH.
+```bash
+make jaguar
+```
+This produces `jag_physics.cof`.
+
 ## Usage
 
 Initialize the world:
