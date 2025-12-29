@@ -4,7 +4,7 @@
 # Executables
 jag_physics_pc
 jag_physics_pc.exe
-jag_physics.cof
+*.cof
 
 # Temporary Output
 *.txt

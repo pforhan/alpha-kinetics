@@ -3,95 +3,73 @@
 #include "jag_platform.h"
 #include <stdio.h>
 #include <stdlib.h>
+#ifndef JAGUAR
 #include <unistd.h>
+#endif
 
 // Define JAGUAR to compile for the console
 // #define JAGUAR
 
 #ifdef JAGUAR
-// Jaguar specific setup
-// Ensure video_buffer is 8-byte aligned for the Object Processor
-uint16_t video_buffer[SCREEN_WIDTH * SCREEN_HEIGHT] __attribute__((aligned(8)));
+#include <display.h>
+#include <screen.h>
+#include <sprite.h>
+
+// Global display and screen pointers (rmvlib types)
+display *d;
+screen *scr; // rmvlib screen structure
 #else
 // PC Simulation setup
 uint16_t video_buffer[SCREEN_WIDTH * SCREEN_HEIGHT];
 #endif
 
-demo_bitmap_t screen;
-
-#ifdef JAGUAR
-// Minimal Object Processor List (Bitmap + Stop)
-// Each object is 64 bits (8 bytes), but Bitmap is usually 16 or 24 bytes.
-// We'll use a simple 16-bit 320x240 bitmap object.
-uint32_t ol_list[8] __attribute__((aligned(8)));
-
-void BuildObjectList() {
-  // Clear list
-  for (int i = 0; i < 8; i++)
-    ol_list[i] = 0;
-
-  // Bitmap Object (See Jaguar Reference Manual for bitfields)
-  // Type = 0 (Bitmap), Y = 0, Height = 240, X = 0, Width = 320
-  // Data = video_buffer, Depth = 4 (16-bit), etc.
-
-  uint32_t lo = 0;
-  uint32_t hi = 0;
-
-  // Low 32 bits: Type(3), Y(11), Height(10), Link(14? No, Link is in high bits)
-  // Actually, simplified layout:
-  // [63:36] Link, [35:24] Data, ... this is complex to do by hand perfectly.
-  // Standard 64-bit Bitmap Object:
-  // Word 0: [0-2] Type, [3-13] YPos, [14-23] Height, [24-38] Link...
-  // Word 1: [0-20] Data Address, [21-23] Reserved, [24-29] Width, [30-31]
-  // Reserved...
-
-  // Let's use a simpler approach:
-  // Word 0: Type=BITOBJ(0), Y=0, Height=240, Link=Next (ol_list + 2)
-  uint32_t link = ((uint32_t)(&ol_list[2])) >> 3;
-  ol_list[0] = 0 | (0 << 3) | (240 << 14) | (link << 24);
-  ol_list[1] = (0 << 0) | (link >> 8); // Link spillover
-
-  // Word 1 (next 64 bits): Data, Pitch, Depth, X...
-  // [0-20] Data, [21-23] reserved, [24-33] X, [34-36] Depth, [37-45] Width...
-  ol_list[2] = ((uint32_t)video_buffer) & 0xFFFFFFF8;
-  ol_list[3] = (0 << 8) | (4 << 10) | ((320 / 8) << 13) |
-               (1 << 28); // 16-bit, width 320, IAGD=1
-
-  // Stop Object
-  ol_list[4] = 4; // Type 4 = STOP
-  ol_list[5] = 0;
-}
-#endif
+// Renamed from 'screen' to 'main_screen' to avoid conflict with rmvlib 'screen'
+// type
+demo_bitmap_t main_screen;
 
 void InitVideo() {
-  screen.pixels = video_buffer;
-  screen.width = SCREEN_WIDTH;
-  screen.height = SCREEN_HEIGHT;
+  main_screen.width = SCREEN_WIDTH;
+  main_screen.height = SCREEN_HEIGHT;
 
 #ifdef JAGUAR
-  // 1. Set Timings
-  VI_HPERIOD = NTSC_HPERIOD;
-  VI_HBB = NTSC_HBB;
-  VI_HBE = NTSC_HBE;
-  VI_HSYNC = NTSC_HSYNC;
+  // 1. Initialise the display driver
+  init_display_driver();
 
-  VI_VPERIOD = NTSC_VPERIOD;
-  VI_VBB = NTSC_VBB;
-  VI_VBE = NTSC_VBE;
-  VI_VSYNC = NTSC_VSYNC;
+  // 2. Create a new display (container for sprites)
+  // 0 = default max sprites
+  d = new_display(0);
 
-  // 2. Build Object List
-  BuildObjectList();
-  OP_LIST_PTR = (uint32_t)ol_list;
+  // 3. Allocate a screen buffer (framebuffer)
+  // DEPTH16 = 16-bit RGB (High Color)
+  // Width must be one of the supported blitter widths (320 is supported)
+  // This function allocates memory for the screen structure AND the pixel data
+  scr = new_screen();
+  phrase *screen_data =
+      alloc_simple_screen(DEPTH16, SCREEN_WIDTH, SCREEN_HEIGHT, scr);
 
-  // 3. Enable Video (16-bit RGB)
-  VI_VMODE = 0x0001;  // RGB16
-  VI_BCOLOR = 0x0000; // Black background
+  // 4. Create a sprite from the screen to display it
+  sprite *s = sprite_of_screen(0, 0, scr); // x=0, y=0
+
+  // 5. Attach the sprite to the display at layer 0 (background)
+  attach_sprite_to_display_at_layer(s, d, 0);
+
+  // 6. Show the display
+  show_display(d);
+
+  // 7. Update our main_screen to point to the allocated buffer
+  // alloc_simple_screen returns a pointer to phrase (64-bit), cast to uint16_t*
+  main_screen.pixels = (uint16_t *)screen_data;
+
+  // Note: rmvlib handles setting video registers (VI_*) via init_display_driver
+  // and show_display
+#else
+  // PC Simulation: Use static buffer
+  main_screen.pixels = video_buffer;
 #endif
 }
 
 void RenderWorld(jp_world_t *world) {
-  demo_bitmap_clear(&screen, COL_BLACK);
+  demo_bitmap_clear(&main_screen, COL_BLACK);
 
   // Draw Ground (Static bodies)
   // Draw Dynamic bodies
@@ -103,13 +81,13 @@ void RenderWorld(jp_world_t *world) {
 
     if (b->shape.type == JP_SHAPE_CIRCLE) {
       int r = FIXED_TO_INT(b->shape.bounds.circle.radius);
-      demo_bitmap_draw_circle(&screen, x, y, r,
+      demo_bitmap_draw_circle(&main_screen, x, y, r,
                               b->is_static ? COL_BLUE : COL_RED);
     } else if (b->shape.type == JP_SHAPE_AABB) {
       int w = FIXED_TO_INT(b->shape.bounds.aabb.width);
       int h = FIXED_TO_INT(b->shape.bounds.aabb.height);
       // AABB is half-width/height, so draw full box
-      demo_bitmap_draw_rect(&screen, x - w, y - h, w * 2, h * 2,
+      demo_bitmap_draw_rect(&main_screen, x - w, y - h, w * 2, h * 2,
                             b->is_static ? COL_GREEN : COL_WHITE);
     }
   }
@@ -121,7 +99,7 @@ void RenderWorld(jp_world_t *world) {
     int y1 = FIXED_TO_INT(t->a->position.y);
     int x2 = FIXED_TO_INT(t->b->position.x);
     int y2 = FIXED_TO_INT(t->b->position.y);
-    demo_bitmap_draw_line(&screen, x1, y1, x2, y2, COL_WHITE);
+    demo_bitmap_draw_line(&main_screen, x1, y1, x2, y2, COL_WHITE);
   }
 }
 

@@ -1,4 +1,11 @@
+#include "op.h"
 #include <stddef.h>
+#include <stdint.h>
+
+// Globals expected by rmvlib
+uint16_t a_vde = 0;
+uint16_t a_vdb = 0;
+op_stop_object stop_object;
 
 // Stubs for stdlib functions
 int abs(int i) { return i < 0 ? -i : i; }

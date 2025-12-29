@@ -1,6 +1,8 @@
 {
   "name": "Jaguar SDK (cubanismo)",
-  "image": "cubanismo/jaguar-sdk:latest",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
   "customizations": {
     "vscode": {
       "extensions": [

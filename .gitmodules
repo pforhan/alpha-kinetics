@@ -1,0 +1,6 @@
+[submodule "rmvlib"]
+	path = rmvlib
+	url = https://github.com/theRemovers/rmvlib
+[submodule "jlibc"]
+	path = jlibc
+	url = https://github.com/theRemovers/jlibc

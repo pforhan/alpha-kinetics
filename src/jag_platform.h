@@ -1,8 +1,6 @@
 #ifndef JAG_PLATFORM_H
 #define JAG_PLATFORM_H
 
-#include "include/stdint.h"
-
 // Memory Map
 #define JAG_DRAM_BASE 0x00000000
 #define JAG_DRAM_SIZE 0x00200000 // 2MB
