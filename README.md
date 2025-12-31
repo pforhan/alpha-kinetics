@@ -21,7 +21,9 @@ A portable, lightweight, fixed-point 2D physics engine written in C99. Designed 
   - `ak_fixed.h`: Fixed-point math macros.
   - `ak_demo_setup.c/.h`: Shared scene configurations for demos.
 - `src/platforms/`: Platform-specific entry points and rendering.
-  - `jaguar/`: Atari Jaguar demo (using `rmvlib`).
+  - `jaguar/`: Atari Jaguar demo.
+    - `rmvlib/`: Removers Video Library (Atari Jaguar).
+    - `jlibc/`: Removers C Library (Atari Jaguar).
   - `pc/`: Terminal-based ASCII simulation.
   - `arduboy/`: Arduboy FX demo boilerplate.
   - `playdate/`: Playdate C SDK demo boilerplate.

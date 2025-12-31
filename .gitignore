@@ -2,8 +2,8 @@
 *.o
 
 # Executables
-jag_physics_pc
-jag_physics_pc.exe
+alpha_kinetics_pc
+alpha_kinetics_pc.exe
 *.cof
 
 # Temporary Output
