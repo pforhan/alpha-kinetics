@@ -124,3 +124,5 @@ clean:
 	$(MAKE) -C $(JAG_LIB_DIR)/rmvlib clean
 	$(MAKE) -C $(JAG_LIB_DIR)/jlibc clean
 	rm -rf build
+	rm -rf src/platforms/playdate/AlphaKinetics.pdx
+	find src/platforms/playdate/Source -maxdepth 1 -type f -not -name 'README.md' -delete

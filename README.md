@@ -68,13 +68,13 @@ For Simulator (default):
 ```bash
 make playdate
 ```
-Output located in `build/playdate_sim/AlphaKinetics.pdx`.
+Output located in `src/platforms/playdate/AlphaKinetics.pdx`.
 
 For Device:
 ```bash
 make playdate_device
 ```
-Output located in `build/playdate_device/AlphaKinetics.pdx`.
+Output located in `src/platforms/playdate/AlphaKinetics.pdx`.
 
 ## Usage API
 
