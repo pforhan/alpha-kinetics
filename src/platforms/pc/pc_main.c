@@ -1,7 +1,9 @@
 #include "ak_demo_setup.h"
 #include "ak_physics.h"
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <termios.h>
 #include <unistd.h>
 
 // Simple ASCII renderer for PC terminal
@@ -74,13 +76,34 @@ int main() {
 
   ak_fixed_t dt = AK_INT_TO_FIXED(1) / 60; // 1/60th second
 
+  // Set non-blocking input
+  struct termios oldt, newt;
+  tcgetattr(STDIN_FILENO, &oldt);
+  newt = oldt;
+  newt.c_lflag &= ~(ICANON | ECHO);
+  tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+  int oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+  fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+
   while (1) {
+    int ch = getchar();
+    if (ch == 'r' || ch == 'R') {
+      ak_demo_create_standard_scene(&world);
+    } else if (ch == 'q' || ch == 'Q') {
+      break;
+    }
+
     ak_world_step(&world, dt);
     PrintASCII(&world);
-    printf("Alpha Kinetics PC Demo - Bodies: %d, Tethers: %d\n",
+    printf("Alpha Kinetics PC Demo - Bodies: %d, Tethers: %d (R to reset, Q to "
+           "quit)\n",
            world.body_count, world.tether_count);
     usleep(16666);
   }
+
+  // Restore terminal
+  tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+  fcntl(STDIN_FILENO, F_SETFL, oldf);
 
   return 0;
 }

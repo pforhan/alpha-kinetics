@@ -11,6 +11,12 @@ static int update(void *userdata) {
   ak_fixed_t dt = AK_INT_TO_FIXED(1) / 30; // 30 FPS
   ak_world_step(&world, dt);
 
+  PDButtons pushed;
+  pd->system->getButtonState(NULL, &pushed, NULL);
+  if (pushed & kButtonA) {
+    ak_demo_create_standard_scene(&world);
+  }
+
   for (int i = 0; i < world.body_count; i++) {
     ak_body_t *b = &world.bodies[i];
     int x = AK_FIXED_TO_INT(b->position.x);

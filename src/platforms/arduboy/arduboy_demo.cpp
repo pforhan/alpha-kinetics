@@ -25,6 +25,13 @@ void loop() {
   if (!arduboy.nextFrame())
     return;
 
+  arduboy.pollButtons();
+
+  // Handle Reset
+  if (arduboy.justPressed(A_BUTTON)) {
+    ak_demo_create_standard_scene(&world);
+  }
+
   // Step Physics
   ak_fixed_t dt = AK_FIXED_DIV(AK_INT_TO_FIXED(1), AK_INT_TO_FIXED(60));
   ak_world_step(&world, dt);
