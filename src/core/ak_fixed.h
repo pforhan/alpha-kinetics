@@ -7,18 +7,18 @@
 typedef int32_t ak_fixed_t;
 
 #define AK_FIXED_SHIFT 16
-#define AK_FIXED_ONE (1 << AK_FIXED_SHIFT)
-#define AK_FIXED_HALF (1 << (AK_FIXED_SHIFT - 1))
+#define AK_FIXED_ONE ((ak_fixed_t)1L << AK_FIXED_SHIFT)
+#define AK_FIXED_HALF ((ak_fixed_t)1L << (AK_FIXED_SHIFT - 1))
 
 // Conversion
-#define AK_INT_TO_FIXED(x) ((ak_fixed_t)((x) << AK_FIXED_SHIFT))
-#define AK_FIXED_TO_INT(x) ((int)((x) >> AK_FIXED_SHIFT))
+#define AK_INT_TO_FIXED(x) ((ak_fixed_t)((ak_fixed_t)(x) << AK_FIXED_SHIFT))
+#define AK_FIXED_TO_INT(x) ((int)((ak_fixed_t)(x) >> AK_FIXED_SHIFT))
 #define AK_FLOAT_TO_FIXED(x) ((ak_fixed_t)((x) * AK_FIXED_ONE))
 #define AK_FIXED_TO_FLOAT(x) ((float)(x) / AK_FIXED_ONE)
 
 // Arithmetic
-#define AK_FIXED_ADD(a, b) ((a) + (b))
-#define AK_FIXED_SUB(a, b) ((a) - (b))
+#define AK_FIXED_ADD(a, b) ((ak_fixed_t)(a) + (ak_fixed_t)(b))
+#define AK_FIXED_SUB(a, b) ((ak_fixed_t)(a) - (ak_fixed_t)(b))
 
 // Multiplication: (a * b) >> 16
 // We cast to int64_t to prevent overflow before shifting

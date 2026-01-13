@@ -1,5 +1,3 @@
-#include <stddef.h>
-#include <stdint.h>
 #include "ak_demo_setup.h"
 #include "ak_physics.h"
 #include "demo_bitmap.h"
@@ -8,6 +6,8 @@
 #include <display.h>
 #include <screen.h>
 #include <sprite.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #ifdef JAGUAR
 // Global display and screen pointers (rmvlib types)
@@ -82,7 +82,8 @@ int main() {
   jag_gpu_init();
 
   ak_world_t world;
-  ak_demo_create_standard_scene(&world);
+  ak_demo_config_t config = {AK_INT_TO_FIXED(320), AK_INT_TO_FIXED(240)};
+  ak_demo_create_standard_scene(&world, config);
 
   ak_fixed_t dt = AK_INT_TO_FIXED(1) / 60;
   PhysicsArgs args = {&world, dt};

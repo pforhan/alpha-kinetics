@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-
 // Simple ASCII renderer for PC terminal
 void PrintASCII(ak_world_t *world) {
   char canvas[20][41];
@@ -68,7 +67,8 @@ void PrintASCII(ak_world_t *world) {
 
 int main() {
   ak_world_t world;
-  ak_demo_create_standard_scene(&world);
+  ak_demo_config_t config = {AK_INT_TO_FIXED(320), AK_INT_TO_FIXED(240)};
+  ak_demo_create_standard_scene(&world, config);
 
   ak_fixed_t dt = AK_INT_TO_FIXED(1) / 60; // 1/60th second
 

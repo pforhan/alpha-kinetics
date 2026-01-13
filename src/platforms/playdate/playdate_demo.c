@@ -49,7 +49,8 @@ static int update(void *userdata) {
 int eventHandler(PlaydateAPI *playdate, PDSystemEvent event, uint32_t arg) {
   if (event == kEventInit) {
     pd = playdate;
-    ak_demo_create_standard_scene(&world);
+    ak_demo_config_t config = {AK_INT_TO_FIXED(400), AK_INT_TO_FIXED(240)};
+    ak_demo_create_standard_scene(&world, config);
     pd->system->setUpdateCallback(update, NULL);
   }
   return 0;

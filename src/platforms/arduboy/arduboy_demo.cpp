@@ -16,7 +16,8 @@ void setup() {
   arduboy.setFrameRate(60);
 
   // Initialize AK World with standard scene
-  ak_demo_create_standard_scene(&world);
+  ak_demo_config_t config = {AK_INT_TO_FIXED(128), AK_INT_TO_FIXED(64)};
+  ak_demo_create_standard_scene(&world, config);
 }
 
 void loop() {
@@ -24,7 +25,7 @@ void loop() {
     return;
 
   // Step Physics
-  ak_fixed_t dt = AK_INT_TO_FIXED(1) / 60;
+  ak_fixed_t dt = AK_FIXED_DIV(AK_INT_TO_FIXED(1), AK_INT_TO_FIXED(60));
   ak_world_step(&world, dt);
 
   // Render

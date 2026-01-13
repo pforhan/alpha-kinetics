@@ -3,11 +3,16 @@
 
 #include "ak_physics.h"
 
+typedef struct {
+  ak_fixed_t width;
+  ak_fixed_t height;
+} ak_demo_config_t;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void ak_demo_create_standard_scene(ak_world_t *world);
+void ak_demo_create_standard_scene(ak_world_t *world, ak_demo_config_t config);
 
 #ifdef __cplusplus
 }
