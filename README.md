@@ -50,9 +50,23 @@ Integration via Arduino IDE or PlatformIO:
 2. Define `-DAK_MAX_BODIES=16` to save RAM.
 3. Link with `Arduboy2` and `ArduboyFX` libraries.
 
+**Build using Make:**
+Requires `arduino-cli` installed and configured.
+```bash
+make arduboy
+```
+Output located in `build/arduboy/AlphaKinetics/`.
+
 ### For Playdate
 1. Add `src/core/ak_physics.c` to your project's source list.
 2. include `ak_physics.h` in your `main.c`.
+
+**Build using Make:**
+Requires Playdate SDK and `cmake`.
+```bash
+make playdate
+```
+Output located in `build/playdate/AlphaKinetics.pdx`.
 
 ## Usage API
 

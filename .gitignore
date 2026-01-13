@@ -4,10 +4,11 @@
 # Executables
 alpha_kinetics_pc
 alpha_kinetics_pc.exe
+AlphaKinetics.pdx
 *.cof
 
 # Temporary Output
-*.txt
+build/
 *.log
 
 # Editor/IDE

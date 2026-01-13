@@ -38,7 +38,7 @@ endif
 
 .PHONY: all jaguar pc clean
 
-all: jaguar pc
+all: jaguar pc arduboy playdate
 
 # Jaguar Toolchain Definitions
 CC = m68k-atari-mint-gcc
@@ -88,6 +88,22 @@ pc: $(PC_PROG)$(EXT)
 $(PC_PROG)$(EXT): $(PC_SRC) $(CORE_SRC)
 	$(CC_PC) $(CFLAGS_PC) -o $@ $(PC_SRC) $(CORE_SRC)
 
+# Arduboy Build Rule
+arduboy:
+	@echo "Building for Arduboy..."
+	@mkdir -p build/arduboy/AlphaKinetics
+	@cp src/platforms/arduboy/arduboy_demo.cpp build/arduboy/AlphaKinetics/AlphaKinetics.ino
+	@cp src/core/* build/arduboy/AlphaKinetics/
+
+	arduino-cli compile --fqbn arduboy:avr:arduboy-fx build/arduboy/AlphaKinetics --build-property "compiler.cpp.extra_flags=-DAK_MAX_BODIES=16 -I{build.path}/sketch"
+
+# Playdate Build Rule
+playdate:
+	@echo "Building for Playdate..."
+	@mkdir -p build/playdate
+	unset CC CFLAGS MACFLAGS LINKFLAGS AR; cmake -S src/platforms/playdate -B build/playdate
+	unset CC CFLAGS MACFLAGS LINKFLAGS AR; $(MAKE) -C build/playdate
+
 # Pattern Rules
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -100,3 +116,4 @@ clean:
 	find src -name "*.o" -type f -delete
 	$(MAKE) -C $(JAG_LIB_DIR)/rmvlib clean
 	$(MAKE) -C $(JAG_LIB_DIR)/jlibc clean
+	rm -rf build
