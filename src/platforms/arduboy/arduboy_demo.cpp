@@ -7,8 +7,6 @@
 #include "ak_demo_setup.h"
 #include "ak_physics.h"
 #include <Arduboy2.h>
-#include <ArduboyFX.h>
-
 
 Arduboy2 arduboy;
 ak_world_t world;

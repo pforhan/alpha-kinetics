@@ -95,7 +95,7 @@ arduboy:
 	@cp src/platforms/arduboy/arduboy_demo.cpp build/arduboy/AlphaKinetics/AlphaKinetics.ino
 	@cp src/core/* build/arduboy/AlphaKinetics/
 
-	arduino-cli compile --fqbn arduboy:avr:arduboy-fx build/arduboy/AlphaKinetics --build-property "compiler.cpp.extra_flags=-DAK_MAX_BODIES=16 -I{build.path}/sketch"
+	arduino-cli compile --fqbn "arduboy-homemade:avr:arduboy-fx" build/arduboy/AlphaKinetics --build-property "compiler.cpp.extra_flags=-DAK_MAX_BODIES=16 -I{build.path}/sketch"
 
 # Playdate Build Rule
 # Playdate Build Rules

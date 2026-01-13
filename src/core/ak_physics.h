@@ -11,6 +11,10 @@
 #define AK_MAX_TETHERS 16
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
   ak_fixed_t x, y;
 } ak_vec2_t;
@@ -79,4 +83,8 @@ ak_body_t *ak_world_add_body(ak_world_t *world, ak_shape_t shape, ak_fixed_t x,
 void ak_world_add_tether(ak_world_t *world, ak_body_t *a, ak_body_t *b,
                          ak_fixed_t max_length);
 void ak_world_step(ak_world_t *world, ak_fixed_t dt);
+
+#ifdef __cplusplus
+}
+#endif
 #endif // AK_PHYSICS_H
