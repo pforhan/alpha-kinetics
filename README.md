@@ -51,12 +51,14 @@ Integration via Arduino IDE or PlatformIO:
 3. Link with `Arduboy2` and `ArduboyFX` libraries.
 
 **Build using Make:**
-Requires `arduino-cli` installed and configured.  See [this post](https://community.arduboy.com/t/arduboy-for-cli-users/12488/1) for instructions.
+Requires `arduino-cli` installed and configured.  See [this post](https://community.arduboy.com/t/arduboy-for-cli-users/12488/1) for instructions.  Flashing Arduboy requires `ardugotools` (see link above).
 
 ```bash
 make arduboy
+make arduboy_flash
 ```
-Output located in `build/arduboy/AlphaKinetics/`.
+Output .ino project located in `build/arduboy/AlphaKinetics/`.
+Binary output files located in `build/arduboy/bin/`.
 
 ### For Playdate
 1. Add `src/core/ak_physics.c` to your project's source list.
