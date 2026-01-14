@@ -22,7 +22,7 @@ This file tracks potential future work, architectural enhancements, and known is
     - **Arduboy**: Might be too heavy for many objects on an 8-bit AVR.
 
 ### Advanced Collision Resolution
-- **Friction**: Implement static and dynamic friction. Current implementation only handles restitution.
+- **Friction**: Implement static and dynamic friction. Currently, even tiny impulses (e.g. from positional corrections) cause objects to drift laterally indefinitely, contributing to "shuffling" in clusters.
 - **Improved Restitution**: Refine the impulse calculation to better handle stacked objects or high-speed impacts.
 - **Continuous Collision Detection (CCD)**: Prevent "tunneling" for fast-moving small objects.
 - **Potential Pitfalls**:

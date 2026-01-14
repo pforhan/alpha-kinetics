@@ -5,17 +5,6 @@ A portable, lightweight, fixed-point 2D physics engine written in C99. Designed 
 ## Features
 
 - **Fixed-Point Arithmetic**: Uses 16.16 fixed-point math (`ak_fixed.h`) to ensure consistent behavior across platforms without an FPU.
-
-### Physics Parity
-For consistent behavior across diverse platforms (Playdate, Arduboy, PC, Jaguar), follow these guidelines:
-
-1.  **Use a Fixed Timestep**: Always call `ak_world_step` with a fixed `dt` (standard: `1/60`).
-    - If a platform runs at 60Hz, call it once per frame.
-    - If a platform runs at 30Hz (like Playdate), call it twice per frame with `dt=1/60`.
-2.  **Uniform Scaling**: Avoid non-uniform scaling (stretching). When adapting to different aspect ratios, use a single scale factor for all axes and center the play area.
-3.  **Relative Constants**: Coordinate-space constants (like collision slop) should be scaled relative to the world's dimensions (the engine handles this automatically in `ak_world_init`).
-
-## Architecture Support
 - **Rigid Body Physics**: Supports linear physics (position, velocity, acceleration, mass).
 - **Collision Detection**:
   - Circle-to-Circle
@@ -39,7 +28,7 @@ For consistent behavior across diverse platforms (Playdate, Arduboy, PC, Jaguar)
   - `arduboy/`: Arduboy FX demo boilerplate.
   - `playdate/`: Playdate C SDK demo boilerplate.
 
-## Getting Started
+## Building
 
 ### For PC (ASCII Simulation)
 Quickly test logic in your terminal:
@@ -90,7 +79,17 @@ make playdate_device
 ```
 Output located in `src/platforms/playdate/AlphaKinetics.pdx`.
 
-## Usage API
+## Using the API
+
+### Note on Physics Parity
+For consistent behavior across diverse platforms (Playdate, Arduboy, PC, Jaguar), follow these guidelines:
+
+1.  **Use a Fixed Timestep**: Always call `ak_world_step` with a fixed `dt` (standard: `1/60`).
+    - If a platform runs at 60Hz, call it once per frame.
+    - If a platform runs at 30Hz (like Playdate), call it twice per frame with `dt=1/60`.
+2.  **Uniform Scaling**: Avoid non-uniform scaling (stretching). When adapting to different aspect ratios, use a single scale factor for all axes and center the play area.
+3.  **Relative Constants**: Coordinate-space constants (like collision slop) should be scaled relative to the world's dimensions (the engine handles this automatically in `ak_world_init`).
+
 
 ### 1. Initialize World
 ```c
