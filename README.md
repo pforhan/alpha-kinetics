@@ -61,7 +61,9 @@ Output .ino project located in `build/arduboy/AlphaKinetics/`.
 Binary output files located in `build/arduboy/bin/`.
 
 ### For Playdate
+
 <iframe width="560" height="315" src="https://www.youtube.com/embed/LW0G3OG3wR8?si=NzkX0tWbDAr2cVPH" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
 1. Add `src/core/ak_physics.c` to your project's source list.
 2. include `ak_physics.h` in your `main.c`.
 
