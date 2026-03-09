@@ -64,8 +64,6 @@ Binary output files located in `build/arduboy/bin/`.
 
 [![Running on playdate hardware](https://github.com/user-attachments/assets/1769ef4a-72ee-405f-98b6-6418cdfacb2d)](https://youtu.be/LW0G3OG3wR8?si=wGSbuTkPkvYbQIEq)
 
-<img width="279" height="473" alt="image" src="https://github.com/user-attachments/assets/1769ef4a-72ee-405f-98b6-6418cdfacb2d" />
-
 See a [sample](https://youtu.be/LW0G3OG3wR8?si=wGSbuTkPkvYbQIEq) running on real hardware.
 
 1. Add `src/core/ak_physics.c` to your project's source list.
