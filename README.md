@@ -62,7 +62,9 @@ Binary output files located in `build/arduboy/bin/`.
 
 ### For Playdate
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/LW0G3OG3wR8?si=NzkX0tWbDAr2cVPH" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<img width="279" height="473" alt="image" src="https://github.com/user-attachments/assets/1769ef4a-72ee-405f-98b6-6418cdfacb2d" />
+
+See a [sample](https://youtu.be/LW0G3OG3wR8?si=wGSbuTkPkvYbQIEq) running on real hardware.
 
 1. Add `src/core/ak_physics.c` to your project's source list.
 2. include `ak_physics.h` in your `main.c`.
