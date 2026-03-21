@@ -16,8 +16,12 @@ void setup() {
   arduboy.setFrameRate(60);
 
   // Initialize AK World with standard scene
-  ak_world_init(&world, AK_INT_TO_FIXED(128), AK_INT_TO_FIXED(64),
-                (ak_vec2_t){0, 0});
+  {
+    ak_vec2_t gravity;
+    ak_vec2_set(&gravity, 0, 0);
+    ak_world_init(&world, AK_INT_TO_FIXED(128), AK_INT_TO_FIXED(64),
+                  &gravity);
+  }
   ak_demo_create_standard_scene(&world);
 }
 

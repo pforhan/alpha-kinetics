@@ -69,9 +69,12 @@ void PrintASCII(ak_world_t *world) {
 
 int main() {
   ak_world_t world;
-  ak_world_init(
-      &world, AK_INT_TO_FIXED(320), AK_INT_TO_FIXED(240),
-      (ak_vec2_t){0, 0}); // Initialized with 0 gravity, demo setup will set it
+  {
+    ak_vec2_t gravity;
+    ak_vec2_set(&gravity, 0, 0);
+    ak_world_init(&world, AK_INT_TO_FIXED(320), AK_INT_TO_FIXED(240),
+                  &gravity); // Initialized with 0 gravity, demo setup will set it
+  }
   ak_demo_create_standard_scene(&world);
 
   // Physics Parity: Standardize on 60Hz internal steps.

@@ -1,10 +1,10 @@
 # Alpha Kinetics
 
-A portable, lightweight, fixed-point 2D physics engine written in C99. Designed for retro consoles and embedded systems (Atari Jaguar, Arduboy FX, Playdate).
+A portable, lightweight, fixed-point 2D physics engine written in C89/C99. Designed for retro consoles and embedded systems (Atari Jaguar, Atari Lynx, Arduboy FX, Playdate).
 
 ## Features
 
-- **Fixed-Point Arithmetic**: Uses 16.16 fixed-point math (`ak_fixed.h`) to ensure consistent behavior across platforms without an FPU.
+- **Flexible Fixed-Point Arithmetic**: Uses 16.16 fixed-point math (`ak_fixed.h`) by default. Automatically switches to 8.8 for 8-bit platforms (Atari Lynx, Arduboy) for performance.
 - **Rigid Body Physics**: Supports linear physics (position, velocity, acceleration, mass).
 - **Collision Detection**:
   - Circle-to-Circle
@@ -12,6 +12,7 @@ A portable, lightweight, fixed-point 2D physics engine written in C99. Designed 
   - Circle-to-AABB
 - **Collision Resolution**: Impulse-based resolution with restitution (bounciness) and positional correction.
 - **Distance Constraints (Tethers)**: Supports massless, soft-constraint tethers (pendulums, chains).
+- **8-bit Optimized**: Refactored to avoid returning structs by value and to use pointers, ensuring compatibility with compilers like `cc65`.
 - **Platform Agnostic Core**: Logic isolated in `src/core`, platform specific code in `src/platforms`.
 
 ## Project Structure
@@ -21,6 +22,7 @@ A portable, lightweight, fixed-point 2D physics engine written in C99. Designed 
   - `ak_fixed.h`: Fixed-point math macros.
   - `ak_demo_setup.c/.h`: Shared scene configurations for demos.
 - `src/platforms/`: Platform-specific entry points and rendering.
+  - `lynx/`: Atari Lynx demo (using `cc65` and `tgi`).
   - `jaguar/`: Atari Jaguar demo.
     - `rmvlib/`: Removers Video Library (Atari Jaguar).
     - `jlibc/`: Removers C Library (Atari Jaguar).
@@ -37,6 +39,13 @@ make pc
 ./alpha_kinetics_pc
 ```
 
+### For Atari Lynx
+Builds for the handheld using `cc65`:
+```bash
+make lynx
+```
+Produces `build/lynx/alpha_kinetics.lnx`.
+
 ### For Atari Jaguar
 Builds for the console using `m68k-atari-mint-gcc`:
 ```bash
@@ -48,71 +57,48 @@ Produces `alpha_kinetics_jag.cof`.
 Integration via Arduino IDE or PlatformIO:
 1. Include `src/core/ak_physics.h` and `.c`.
 2. Define `-DAK_MAX_BODIES=16` to save RAM.
-3. Link with `Arduboy2` and `ArduboyFX` libraries.
 
 **Build using Make:**
-Requires `arduino-cli` installed and configured.  See [this post](https://community.arduboy.com/t/arduboy-for-cli-users/12488/1) for instructions.  Flashing Arduboy requires `ardugotools` (see link above).
+Requires `arduino-cli` installed and configured.
 
 ```bash
 make arduboy
-make arduboy_flash
 ```
 Output .ino project located in `build/arduboy/AlphaKinetics/`.
 Binary output files located in `build/arduboy/bin/`.
 
 ### For Playdate
-
-[![Running on playdate hardware](https://github.com/user-attachments/assets/1769ef4a-72ee-405f-98b6-6418cdfacb2d)](https://youtu.be/LW0G3OG3wR8?si=wGSbuTkPkvYbQIEq)
-
 See a [sample](https://youtu.be/LW0G3OG3wR8?si=wGSbuTkPkvYbQIEq) running on real hardware.
-
-1. Add `src/core/ak_physics.c` to your project's source list.
-2. include `ak_physics.h` in your `main.c`.
 
 **Build using Make:**
 Requires Playdate SDK and `cmake`.
 
-For Simulator (default):
 ```bash
 make playdate
 ```
-Output located in `src/platforms/playdate/AlphaKinetics.pdx`.
-
-For Device:
-```bash
-make playdate_device
-```
-Output located in `src/platforms/playdate/AlphaKinetics.pdx`.
+Output located in `build/playdate_sim` or `build/playdate_device`.
 
 ## Using the API
-
-### Note on Physics Parity
-For consistent behavior across diverse platforms (Playdate, Arduboy, PC, Jaguar), follow these guidelines:
-
-1.  **Use a Fixed Timestep**: Always call `ak_world_step` with a fixed `dt` (standard: `1/60`).
-    - If a platform runs at 60Hz, call it once per frame.
-    - If a platform runs at 30Hz (like Playdate), call it twice per frame with `dt=1/60`.
-2.  **Uniform Scaling**: Avoid non-uniform scaling (stretching). When adapting to different aspect ratios, use a single scale factor for all axes and center the play area.
-3.  **Relative Constants**: Coordinate-space constants (like collision slop) should be scaled relative to the world's dimensions (the engine handles this automatically in `ak_world_init`).
-
 
 ### 1. Initialize World
 ```c
 ak_world_t world;
-ak_world_init(&world, (ak_vec2_t){0, AK_INT_TO_FIXED(50)}); // Gravity
+ak_vec2_t gravity;
+ak_vec2_set(&gravity, 0, AK_INT_TO_FIXED(50));
+ak_world_init(&world, AK_INT_TO_FIXED(320), AK_INT_TO_FIXED(240), &gravity);
 ```
 
 ### 2. Add Bodies
 ```c
+ak_shape_t shape;
+
 // Static ground
-ak_world_add_body(&world, 
-    (ak_shape_t){.type = AK_SHAPE_AABB, .bounds.aabb = {AK_INT_TO_FIXED(50), AK_INT_TO_FIXED(10)}}, 
-    AK_INT_TO_FIXED(80), AK_INT_TO_FIXED(120), 0);
+ak_shape_aabb_set(&shape, AK_INT_TO_FIXED(50), AK_INT_TO_FIXED(10));
+ak_world_add_body(&world, &shape, AK_INT_TO_FIXED(80), AK_INT_TO_FIXED(120), 0);
 
 // Dynamic Circle
-ak_body_t* ball = ak_world_add_body(&world, 
-    (ak_shape_t){.type = AK_SHAPE_CIRCLE, .bounds.circle = {AK_INT_TO_FIXED(8)}}, 
-    AK_INT_TO_FIXED(80), AK_INT_TO_FIXED(20), AK_INT_TO_FIXED(1));
+ak_shape_circle_set(&shape, AK_INT_TO_FIXED(8));
+ak_body_t* ball = ak_world_add_body(&world, &shape, AK_INT_TO_FIXED(80), AK_INT_TO_FIXED(20), AK_INT_TO_FIXED(1));
 ```
 
 ### 3. Simulation Step
@@ -122,6 +108,6 @@ ak_world_step(&world, dt);
 ```
 
 ## Optimization and Portability
-- **DMA Friendly**: `ak_body_t` padding is optimized for Jaguar DMA when `-DJAGUAR` is defined.
+- **8-bit Platforms**: Switches to 8.8 fixed-point automatically for `__CC65__` or `ARDUBOY`.
+- **Pass-by-Pointer**: All struct-based API calls use pointers to avoid return-value limitations on 6502/AVR.
 - **Memory Constraints**: Adjust `AK_MAX_BODIES` and `AK_MAX_TETHERS` at compile time for tight RAM targets.
-- **Fixed-Point Intermediates**: Math routines use `int64_t` intermediates where necessary to prevent overflow during calculations involving screen-width distances.
