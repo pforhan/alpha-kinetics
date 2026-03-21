@@ -36,9 +36,16 @@ endif
 # Targets
 #############################################################################
 
-.PHONY: all jaguar pc clean
+.PHONY: all jaguar pc clean lynx
 
-all: jaguar pc arduboy playdate
+all: jaguar pc arduboy playdate lynx
+
+# Lynx Build Configuration
+LYNX_DIR = src/platforms/lynx
+LYNX_PROG = alpha_kinetics.lnx
+LYNX_SRC = $(LYNX_DIR)/lynx_main.c
+CL_LYNX = cl65
+CFLAGS_LYNX = -t lynx $(CORE_INC) -Oir -DAK_MAX_BODIES=12 -DAK_MAX_TETHERS=4
 
 # Jaguar Toolchain Definitions
 CC = m68k-atari-mint-gcc
@@ -114,6 +121,12 @@ playdate_device:
 	@mkdir -p build/playdate_device
 	unset CC CFLAGS MACFLAGS LINKFLAGS AR; cmake -S src/platforms/playdate -B build/playdate_device -DDEVICE_BUILD=ON
 	unset CC CFLAGS MACFLAGS LINKFLAGS AR; $(MAKE) -C build/playdate_device
+
+# Lynx Build Rule
+lynx:
+	@echo "Building for Atari Lynx..."
+	@mkdir -p build/lynx
+	$(CL_LYNX) $(CFLAGS_LYNX) -o build/lynx/$(LYNX_PROG) $(LYNX_SRC) $(CORE_SRC)
 
 # Pattern Rules
 %.o: %.c

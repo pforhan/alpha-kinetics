@@ -58,8 +58,12 @@ static int update(void *userdata) {
 int eventHandler(PlaydateAPI *playdate, PDSystemEvent event, uint32_t arg) {
   if (event == kEventInit) {
     pd = playdate;
-    ak_world_init(&world, AK_INT_TO_FIXED(400), AK_INT_TO_FIXED(240),
-                  (ak_vec2_t){0, 0});
+    {
+        ak_vec2_t gravity;
+        ak_vec2_set(&gravity, 0, 0);
+        ak_world_init(&world, AK_INT_TO_FIXED(400), AK_INT_TO_FIXED(240),
+                      &gravity);
+    }
     ak_demo_create_standard_scene(&world);
     pd->system->setUpdateCallback(update, NULL);
   }

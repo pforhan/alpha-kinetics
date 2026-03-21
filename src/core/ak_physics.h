@@ -72,19 +72,37 @@ typedef struct {
   int tether_count;
 } ak_world_t;
 
+// Helper Creators (for compatibility with old compilers like CC65)
+AK_INLINE void ak_vec2_set(ak_vec2_t *out, ak_fixed_t x, ak_fixed_t y) {
+  out->x = x;
+  out->y = y;
+}
+
+AK_INLINE void ak_shape_circle_set(ak_shape_t *out, ak_fixed_t radius) {
+  out->type = AK_SHAPE_CIRCLE;
+  out->bounds.circle.radius = radius;
+}
+
+AK_INLINE void ak_shape_aabb_set(ak_shape_t *out, ak_fixed_t width,
+                                 ak_fixed_t height) {
+  out->type = AK_SHAPE_AABB;
+  out->bounds.aabb.width = width;
+  out->bounds.aabb.height = height;
+}
+
 // Vector Math
-ak_vec2_t ak_vec2_add(ak_vec2_t a, ak_vec2_t b);
-ak_vec2_t ak_vec2_sub(ak_vec2_t a, ak_vec2_t b);
-ak_vec2_t ak_vec2_mul(ak_vec2_t v, ak_fixed_t s);
-ak_fixed_t ak_vec2_dot(ak_vec2_t a, ak_vec2_t b);
-ak_fixed_t ak_vec2_len_sqr(ak_vec2_t v);
-ak_fixed_t ak_vec2_len(ak_vec2_t v);
+void ak_vec2_add(ak_vec2_t *out, const ak_vec2_t *a, const ak_vec2_t *b);
+void ak_vec2_sub(ak_vec2_t *out, const ak_vec2_t *a, const ak_vec2_t *b);
+void ak_vec2_mul(ak_vec2_t *out, const ak_vec2_t *v, ak_fixed_t s);
+ak_fixed_t ak_vec2_dot(const ak_vec2_t *a, const ak_vec2_t *b);
+ak_fixed_t ak_vec2_len_sqr(const ak_vec2_t *v);
+ak_fixed_t ak_vec2_len(const ak_vec2_t *v);
 
 // Physics API
 void ak_world_init(ak_world_t *world, ak_fixed_t width, ak_fixed_t height,
-                   ak_vec2_t gravity);
-ak_body_t *ak_world_add_body(ak_world_t *world, ak_shape_t shape, ak_fixed_t x,
-                             ak_fixed_t y, ak_fixed_t mass);
+                   const ak_vec2_t *gravity);
+ak_body_t *ak_world_add_body(ak_world_t *world, const ak_shape_t *shape,
+                             ak_fixed_t x, ak_fixed_t y, ak_fixed_t mass);
 void ak_world_add_tether(ak_world_t *world, ak_body_t *a, ak_body_t *b,
                          ak_fixed_t max_length);
 /**

@@ -59,5 +59,6 @@ This file tracks potential future work, architectural enhancements, and known is
 - **Fix**: Ensure depth 64-bit math is consistent across all solvers.
 
 ### Optimization
+- **Lynx/Suzy**: Investigate using the Suzy co-processor for 16.16 fixed-point math to regain precision on the 6502.
 - **Jaguar DMA**: Further optimize `ak_body_t` layout. Ensure the solver can process bodies in chunks that fit in Scratchpad RAM.
 - **Arduboy**: Evaluate if `int16_t` for some properties (like radius or half-extents) would save enough RAM and cycles without sacrificing world scale.

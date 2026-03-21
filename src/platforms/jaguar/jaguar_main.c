@@ -82,8 +82,12 @@ int main() {
   jag_gpu_init();
 
   ak_world_t world;
-  ak_world_init(&world, AK_INT_TO_FIXED(320), AK_INT_TO_FIXED(240),
-                (ak_vec2_t){0, 0});
+  {
+    ak_vec2_t gravity;
+    ak_vec2_set(&gravity, 0, 0);
+    ak_world_init(&world, AK_INT_TO_FIXED(320), AK_INT_TO_FIXED(240),
+                  &gravity);
+  }
   ak_demo_create_standard_scene(&world);
 
   ak_fixed_t dt = AK_INT_TO_FIXED(1) / 60;
