@@ -30,6 +30,15 @@ A portable, lightweight, fixed-point 2D physics engine written in C99. Designed 
 
 ## Building
 
+For the most consistent experience, especially when building for **Atari Jaguar**, we recommend using the included **Dev Container**.
+
+### Dev Container (Recommended)
+This project includes a `.devcontainer` configuration that provides a complete build environment with all necessary toolchains (GCC, RMAC, RLN) for the Atari Jaguar and PC.
+
+1.  **Prerequisites**: Install [Docker](https://www.docker.com/) and [VS Code](https://code.visualstudio.com/) with the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension.
+2.  **Open in Container**: Open the project folder in VS Code. It will prompt you to "Reopen in Container".
+3.  **Build**: Once loaded, you can run `make jaguar` or `make pc` directly in the integrated terminal without any further setup.
+
 ### For PC (ASCII Simulation)
 Quickly test logic in your terminal:
 ```bash
@@ -38,20 +47,36 @@ make pc
 ```
 
 ### For Atari Jaguar
-Builds for the console using `m68k-atari-mint-gcc`:
+
+Detailed instructions for building and linking the Jaguar demo.
+
+**Toolchain Requirements:**
+- **m68k-atari-mint-gcc**: [Thorsten Otto's cross-tools (v7.5.0)](https://tho-otto.de/crossmint.php).
+- **RMAC**: [Atari Jaguar Assembler](http://rmac.is-slick.com/).
+- **RLN**: [Atari Jaguar Linker](http://rmac.is-slick.com/).
+- **MintLib**: [MiNTLib](https://github.com/freemint/mintlib) (Required for C standard library support).
+
+*(Note: These are all pre-installed in the Dev Container.)*
+
+**Build using Make:**
 ```bash
 make jaguar
 ```
-Produces `alpha_kinetics_jag.cof`.
+Produces `alpha_kinetics_jag.cof`. This file can be run in the [BigPEmu](https://www.richwhitehouse.com/jaguar/) emulator, uploaded to a Skunkboard, or run on real hardware via a BJL-modded console.
+
+**Integrating into your project:**
+1. Include `src/core/ak_physics.h` and `.c`.
+2. Define `-DJAGUAR` to enable DMA-friendly padding in `ak_body_t`.
+3. Link against `rmvlib` and `jlibc` provided in `src/platforms/jaguar/`.
 
 ### For Arduboy FX
 Integration via Arduino IDE or PlatformIO:
 1. Include `src/core/ak_physics.h` and `.c`.
 2. Define `-DAK_MAX_BODIES=16` to save RAM.
-3. Link with `Arduboy2` and `ArduboyFX` libraries.
+3. Link with [`Arduboy2`](https://github.com/MLXXXp/Arduboy2) and [`ArduboyFX`](https://github.com/MrBlinky/ArduboyFX) libraries.
 
 **Build using Make:**
-Requires `arduino-cli` installed and configured.  See [this post](https://community.arduboy.com/t/arduboy-for-cli-users/12488/1) for instructions.  Flashing Arduboy requires `ardugotools` (see link above).
+Requires [`arduino-cli`](https://arduino.github.io/arduino-cli/latest/) installed and configured. See [this post](https://community.arduboy.com/t/arduboy-for-cli-users/12488/1) for setup instructions. Flashing Arduboy requires [`ardugotools`](https://github.com/MrBlinky/Ardugotools).
 
 ```bash
 make arduboy
@@ -70,7 +95,7 @@ See a [sample](https://youtu.be/LW0G3OG3wR8?si=wGSbuTkPkvYbQIEq) running on real
 2. include `ak_physics.h` in your `main.c`.
 
 **Build using Make:**
-Requires Playdate SDK and `cmake`.
+Requires [Playdate SDK](https://play.date/dev/) and [`cmake`](https://cmake.org/).
 
 For Simulator (default):
 ```bash
