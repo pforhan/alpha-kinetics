@@ -3,17 +3,8 @@
 #include "demo_bitmap.h"
 #include "jag_gpu.h"
 #include "jag_platform.h"
-#include <display.h>
-#include <screen.h>
-#include <sprite.h>
 #include <stddef.h>
 #include <stdint.h>
-
-#ifdef JAGUAR
-// Global display and screen pointers (rmvlib types)
-display *d;
-screen *scr; // rmvlib screen structure
-#endif
 
 demo_bitmap_t main_screen;
 
@@ -22,17 +13,9 @@ void InitVideo() {
   main_screen.height = SCREEN_HEIGHT;
 
 #ifdef JAGUAR
-  init_display_driver();
-  d = new_display(0);
-  scr = new_screen();
-  phrase *screen_data =
-      alloc_simple_screen(DEPTH16, SCREEN_WIDTH, SCREEN_HEIGHT, scr);
-
-  sprite *s = sprite_of_screen(0, 0, scr); // x=0, y=0
-  attach_sprite_to_display_at_layer(s, d, 0);
-  show_display(d);
-
-  main_screen.pixels = (uint16_t *)screen_data;
+  // TODO: jaguar-sdk 2D video initialization goes here.
+  // We no longer use rmvlib, so a new frame buffer needs to be set up.
+  main_screen.pixels = NULL; // Stub
 #endif
 }
 

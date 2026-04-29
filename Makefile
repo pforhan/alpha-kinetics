@@ -14,7 +14,7 @@ JAG_SRC = $(JAG_DIR)/jaguar_main.c src/demo_bitmap.c src/jag_gpu.c src/libgcc.c 
 JAG_S = src/jag_startup.s
 
 # Jaguar Libraries Location
-JAG_LIB_DIR = $(JAG_DIR)
+JAG_LIB_DIR = $(JAG_DIR)/jaguar-sdk
 
 # PC Build Configuration
 PC_DIR = src/platforms/pc
@@ -47,7 +47,7 @@ RLN = rln
 AR = m68k-atari-mint-ar
 
 # Jaguar Compiler Flags
-CFLAGS += -std=c99 -mshort -Wall -fno-builtin $(CORE_INC) -Isrc -I$(JAG_LIB_DIR)/rmvlib/include -I$(JAG_LIB_DIR)/jlibc/include -DJAGUAR
+CFLAGS += -std=c99 -mshort -Wall -fno-builtin $(CORE_INC) -Isrc -I$(JAG_LIB_DIR)/jaguar/include -DJAGUAR
 MACFLAGS = -fb -v
 LINKFLAGS += -v -a 4000 x x
 
@@ -55,32 +55,21 @@ LINKFLAGS += -v -a 4000 x x
 JAG_OBJS = $(JAG_S:.s=.o) $(JAG_SRC:.c=.o) $(CORE_SRC:.c=.o)
 
 # Libraries
-LIB_RMV = $(JAG_LIB_DIR)/rmvlib/rmvlib.a
-LIB_JLIBC = $(JAG_LIB_DIR)/jlibc/jlibc.a
 LIB_GCC = /opt/cross-mint/usr/lib64/gcc/m68k-atari-mint/7/libgcc.a
 
 # Export variables
 export CC AR RMAC RLN
 export JAGPATH = $(CURDIR)/$(JAG_LIB_DIR)
-export JLIBC = $(CURDIR)/$(JAG_LIB_DIR)/jlibc
 
 # Common flags for libraries
 LIB_CFLAGS_BASE = -m68000 -Wall -fomit-frame-pointer -O2 -msoft-float
 PROJ_ROOT = $(CURDIR)
 
-$(LIB_JLIBC):
-	$(MAKE) -e -C $(JAG_LIB_DIR)/jlibc jlibc.a CFLAGS="$(LIB_CFLAGS_BASE) -I$(PROJ_ROOT)/$(JAG_LIB_DIR)/jlibc/include" OSUBDIRS=ctype MAKEFLAGS=--no-print-directory
-
-$(LIB_RMV): $(LIB_JLIBC)
-	$(MAKE) -e -C $(JAG_LIB_DIR)/rmvlib rmvlib.a JLIBC=$(PROJ_ROOT)/$(JAG_LIB_DIR)/jlibc CFLAGS="$(LIB_CFLAGS_BASE) -I$(PROJ_ROOT)/$(JAG_LIB_DIR)/rmvlib/include -I$(PROJ_ROOT)/$(JAG_LIB_DIR)/jlibc/include" OSUBDIRS= MAKEFLAGS="--no-print-directory -e"
-	@echo "Manually updating rmvlib.a..."
-	find $(JAG_LIB_DIR)/rmvlib -name "*.o" | xargs $(AR) rvs $(LIB_RMV)
-
 # Jaguar Build Rule
 jaguar: $(JAG_PROG)
 
-$(JAG_PROG): $(JAG_OBJS) $(LIB_RMV)
-	$(RLN) $(LINKFLAGS) -o $@ $(JAG_OBJS) $(LIB_RMV) $(LIB_JLIBC) $(LIB_GCC)
+$(JAG_PROG): $(JAG_OBJS)
+	$(RLN) $(LINKFLAGS) -o $@ $(JAG_OBJS) $(LIB_GCC)
 
 # PC Build Rule
 pc: $(PC_PROG)$(EXT)
@@ -125,8 +114,6 @@ playdate_device:
 clean:
 	$(RM_CMD) $(PC_PROG)$(EXT) *.cof *.sym *.map
 	find src -name "*.o" -type f -delete
-	$(MAKE) -C $(JAG_LIB_DIR)/rmvlib clean
-	$(MAKE) -C $(JAG_LIB_DIR)/jlibc clean
 	rm -rf build
 	rm -rf src/platforms/playdate/AlphaKinetics.pdx
 	find src/platforms/playdate/Source -maxdepth 1 -type f -not -name 'README.md' -delete

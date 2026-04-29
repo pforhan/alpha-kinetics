@@ -22,8 +22,7 @@ A portable, lightweight, fixed-point 2D physics engine written in C99. Designed 
   - `ak_demo_setup.c/.h`: Shared scene configurations for demos.
 - `src/platforms/`: Platform-specific entry points and rendering.
   - `jaguar/`: Atari Jaguar demo.
-    - `rmvlib/`: Removers Video Library (Atari Jaguar).
-    - `jlibc/`: Removers C Library (Atari Jaguar).
+    - `jaguar-sdk/`: Modernized Atari Jaguar SDK containing standard libraries.
   - `pc/`: Terminal-based ASCII simulation.
   - `arduboy/`: Arduboy FX demo boilerplate.
   - `playdate/`: Playdate C SDK demo boilerplate.
@@ -67,7 +66,7 @@ Produces `alpha_kinetics_jag.cof`. This file can be run in the [BigPEmu](https:/
 **Integrating into your project:**
 1. Include `src/core/ak_physics.h` and `.c`.
 2. Define `-DJAGUAR` to enable DMA-friendly padding in `ak_body_t`.
-3. Link against `rmvlib` and `jlibc` provided in `src/platforms/jaguar/`.
+3. Link against `jaguar-sdk` provided in `src/platforms/jaguar/`.
 
 ### For Arduboy FX
 Integration via Arduino IDE or PlatformIO:
