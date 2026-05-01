@@ -1,5 +1,6 @@
 #ifndef JAG_PLATFORM_H
 #define JAG_PLATFORM_H
+#include "ak_fixed.h"
 
 // Memory Map
 #define JAG_DRAM_BASE 0x00000000
@@ -31,8 +32,7 @@
 #define OP_STATUS (*(volatile uint32_t *)(OP_BASE + 0x24))
 
 // Palette (TOM)
-#define PALETTE_BASE (TOM_BASE + 0x0400)
-#define CLUT ((volatile uint16_t *)PALETTE_BASE)
+// CLUT is defined in jaguar-sdk
 
 // Blitter (TOM)
 #define BLIT_BASE (TOM_BASE + 0x3000)
@@ -48,9 +48,8 @@
 #define DSP_BASE (JERRY_BASE + 0x1000)
 #define DSP_PC (*(volatile uint32_t *)(DSP_BASE + 0x00))
 #define DSP_CTRL (*(volatile uint32_t *)(DSP_BASE + 0x04))
-
 // Joypad (JERRY)
-#define JOYSTICK (*(volatile uint16_t *)(JERRY_BASE + 0x4000))
+// JOYSTICK is defined in jaguar-sdk
 
 // Screen Dimensions (NTSC 320x240)
 #define SCREEN_WIDTH 320

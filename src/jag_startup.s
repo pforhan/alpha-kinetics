@@ -27,3 +27,13 @@ start:
     ; If __main returns, just loop forever
 loop:
     bra.s   loop
+
+    .bss
+    .globl _opList
+    .globl _frameBuffer
+    .phrase
+_opList:
+    .ds.b 64
+    .phrase
+_frameBuffer:
+    .ds.b 153600

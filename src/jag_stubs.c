@@ -1,18 +1,10 @@
-#include "op.h"
-#include <stddef.h>
-#include <stdint.h>
+typedef unsigned long size_t;
 
-// Globals expected by rmvlib
-uint16_t a_vde = 0;
-uint16_t a_vdb = 0;
-op_stop_object stop_object;
-
-// Stubs for stdlib functions
 int abs(int i) { return i < 0 ? -i : i; }
 
 void bcopy(const void *src, void *dest, size_t n) {
-  char *d = dest;
-  const char *s = src;
+  char *d = (char*)dest;
+  const char *s = (const char*)src;
   while (n--) {
     *d++ = *s++;
   }

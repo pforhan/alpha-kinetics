@@ -3,19 +3,104 @@
 #include "demo_bitmap.h"
 #include "jag_gpu.h"
 #include "jag_platform.h"
+#include <jaguar.h>
+
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
+
+// 64-bit Object List phrase (represented as two 32-bit halves for big-endian 68000)
+typedef struct {
+  uint32_t hi;
+  uint32_t lo;
+} OP_Phrase;
+
+extern OP_Phrase opList[8];
+extern uint16_t frameBuffer[];
 
 demo_bitmap_t main_screen;
 
 void InitVideo() {
-  main_screen.width = SCREEN_WIDTH;
-  main_screen.height = SCREEN_HEIGHT;
+  main_screen.width = 320;
+  main_screen.height = 240;
 
 #ifdef JAGUAR
-  // TODO: jaguar-sdk 2D video initialization goes here.
-  // We no longer use rmvlib, so a new frame buffer needs to be set up.
-  main_screen.pixels = NULL; // Stub
+  // Point the demo_bitmap structure to our framebuffer
+  main_screen.pixels = frameBuffer;
+
+  // Configure Video Registers
+  int is_pal = (*CONFIG & VIDTYPE) == 0;
+  int hmid = is_pal ? PAL_HMID : NTSC_HMID;
+  int width = is_pal ? PAL_WIDTH : NTSC_WIDTH;
+  int vmid = is_pal ? PAL_VMID : NTSC_VMID;
+  int height = is_pal ? PAL_HEIGHT : NTSC_HEIGHT;
+
+  int hdb = hmid - (width / 2) + 4;
+  int hde = (width / 2) - 1 + 0x400;
+
+  int screen_vdb = vmid - height;
+  int screen_vde = vmid + height;
+
+  *HDB1 = hdb;
+  *HDB2 = hdb;
+  *HDE = hde;
+  *VDB = screen_vdb;
+  *VDE = 0xFFFF;
+  *BORD1 = 0;
+  *BG = 0;
+
+  // Construct Object List
+  int opIndex = 0;
+  uint32_t next_phrase;
+
+  // 1. Branch if VC < VDB
+  next_phrase = ((uint32_t)&opList[2]) >> 3;
+  opList[opIndex].lo = (BRANCHOBJ) | (O_BRLT) | (screen_vdb << 3) | (next_phrase << 24);
+  opList[opIndex].hi = (next_phrase >> 8);
+  opIndex++;
+
+  // 2. Branch if VC > VDE
+  next_phrase = ((uint32_t)&opList[4]) >> 3;
+  opList[opIndex].lo = (BRANCHOBJ) | (O_BRGT) | (screen_vde << 3) | (next_phrase << 24);
+  opList[opIndex].hi = (next_phrase >> 8);
+  opIndex++;
+
+  // 3. Bitmap Object (2 phrases)
+  next_phrase = ((uint32_t)&opList[4]) >> 3; // Link to Stop object
+  uint32_t data_addr = (uint32_t)frameBuffer;
+  int bmp_height = 240;
+  int bmp_width = 320;
+  
+  // Vertically center
+  int ypos = screen_vdb + (height * 2 - bmp_height) / 2;
+  ypos &= ~1; // Must be even
+  
+  // Phrase 1
+  opList[opIndex].lo = (BITOBJ) | (ypos << 3) | (bmp_height << 14) | (next_phrase << 24);
+  opList[opIndex].hi = (next_phrase >> 8) | (data_addr << 8);
+  opIndex++;
+
+  // Phrase 2
+  int xpos = ((width / 4) - bmp_width) / 2; // Horizontally center
+  uint32_t iwidth = bmp_width / 4; // 16-bit depth = 4 pixels/phrase
+  uint32_t dwidth = bmp_width / 4;
+
+  opList[opIndex].lo = (O_DEPTH16) | (O_NOGAP) | (xpos & 0xFFF) | (dwidth << 18) | (iwidth << 28);
+  opList[opIndex].hi = (iwidth >> 4);
+  opIndex++;
+
+  // 4. Stop Object
+  opList[opIndex].lo = STOPOBJ | O_STOPINTS;
+  opList[opIndex].hi = 0;
+  opIndex++;
+
+  // Set Object List Pointer (swapped for 68000)
+  uint32_t olp_addr = (uint32_t)opList;
+  olp_addr = ((olp_addr >> 16) & 0xFFFF) | ((olp_addr & 0xFFFF) << 16);
+  *OLP = olp_addr;
+
+  // Configure Video Mode (RGB16, Enable Video)
+  *VMODE = 0x6C7; // CRY16/RGB16 + VIEN + BGEN + etc
 #endif
 }
 

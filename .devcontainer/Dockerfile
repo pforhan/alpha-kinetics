@@ -1,6 +1,3 @@
-FROM cubanismo/jaguar-sdk:latest
-
-# Switch to archived Debian repositories (buster is EOL) 
 # Switch to modern Ubuntu 24.04 base to valid Glibc compatibility with Thorsten Otto's tools
 FROM ubuntu:24.04
 

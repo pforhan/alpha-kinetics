@@ -38,6 +38,7 @@ This project includes a `.devcontainer` configuration that provides a complete b
 2.  **Open in Container**: Open the project folder in VS Code. It will prompt you to "Reopen in Container".
 3.  **Build**: Once loaded, you can run `make jaguar` or `make pc` directly in the integrated terminal without any further setup.
 
+
 ### For PC (ASCII Simulation)
 Quickly test logic in your terminal:
 ```bash
@@ -55,13 +56,26 @@ Detailed instructions for building and linking the Jaguar demo.
 - **RLN**: [Atari Jaguar Linker](http://rmac.is-slick.com/).
 - **MintLib**: [MiNTLib](https://github.com/freemint/mintlib) (Required for C standard library support).
 
-*(Note: These are all pre-installed in the Dev Container.)*
+*(Note: These are all pre-installed in the Dev Container, which uses the official `cubanismo/jaguar-sdk:latest` image.)*
 
 **Build using Make:**
+
+There are two primary ways to build for the Jaguar depending on your environment:
+
+1. **Native Build (Requires Toolchain):**
+If you are inside the Dev Container, or have natively installed the `m68k` toolchain, you can build the ROM directly:
 ```bash
 make jaguar
 ```
-Produces `alpha_kinetics_jag.cof`. This file can be run in the [BigPEmu](https://www.richwhitehouse.com/jaguar/) emulator, uploaded to a Skunkboard, or run on real hardware via a BJL-modded console.
+
+2. **Docker Build (No Toolchain Required):**
+If you aren't using an IDE that supports Dev Containers and want to avoid installing the toolchain manually, you can build the project using the official `cubanismo/jaguar-sdk` Docker image via the included Make target:
+```bash
+make docker-jaguar
+```
+This automatically mounts your current directory into the container, builds the `.cof` file, and exits cleanly.
+
+Both commands produce `alpha_kinetics_jag.cof`. This file can be run in the [BigPEmu](https://www.richwhitehouse.com/jaguar/) emulator, uploaded to a Skunkboard, or run on real hardware via a BJL-modded console.
 
 **Integrating into your project:**
 1. Include `src/core/ak_physics.h` and `.c`.

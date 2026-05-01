@@ -2,7 +2,7 @@
 #define JAG_GPU_H
 
 #include "jag_platform.h"
-#include <stdint.h>
+#include "ak_fixed.h"
 
 
 // Function pointer type for code to run on GPU

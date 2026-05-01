@@ -10,7 +10,7 @@ CORE_INC = -I$(CORE_DIR)
 # Jaguar Build Configuration
 JAG_DIR = src/platforms/jaguar
 JAG_PROG = alpha_kinetics_jag.cof
-JAG_SRC = $(JAG_DIR)/jaguar_main.c src/demo_bitmap.c src/jag_gpu.c src/libgcc.c src/jag_stubs.c
+JAG_SRC = $(JAG_DIR)/jaguar_main.c src/demo_bitmap.c src/jag_gpu.c src/jag_stubs.c
 JAG_S = src/jag_startup.s
 
 # Jaguar Libraries Location
@@ -36,15 +36,18 @@ endif
 # Targets
 #############################################################################
 
-.PHONY: all jaguar pc clean
+.PHONY: all jaguar pc clean docker-jaguar
 
 all: jaguar pc arduboy playdate
 
-# Jaguar Toolchain Definitions
-CC = m68k-atari-mint-gcc
+# Toolchain for Jaguar
+CC_JAG = m68k-atari-mint-gcc
+AR_JAG = m68k-atari-mint-ar
 RMAC = rmac
 RLN = rln
-AR = m68k-atari-mint-ar
+
+# Dynamically locate libgcc based on the current compiler
+LIB_GCC = $(shell command -v $(CC_JAG) >/dev/null 2>&1 && $(CC_JAG) -m68000 -mshort -print-libgcc-file-name)
 
 # Jaguar Compiler Flags
 CFLAGS += -std=c99 -mshort -Wall -fno-builtin $(CORE_INC) -Isrc -I$(JAG_LIB_DIR)/jaguar/include -DJAGUAR
@@ -54,11 +57,10 @@ LINKFLAGS += -v -a 4000 x x
 # Jaguar Objects
 JAG_OBJS = $(JAG_S:.s=.o) $(JAG_SRC:.c=.o) $(CORE_SRC:.c=.o)
 
-# Libraries
-LIB_GCC = /opt/cross-mint/usr/lib64/gcc/m68k-atari-mint/7/libgcc.a
-
 # Export variables
-export CC AR RMAC RLN
+export CC=$(CC_JAG)
+export AR=$(AR_JAG)
+export RMAC RLN
 export JAGPATH = $(CURDIR)/$(JAG_LIB_DIR)
 
 # Common flags for libraries
@@ -70,6 +72,12 @@ jaguar: $(JAG_PROG)
 
 $(JAG_PROG): $(JAG_OBJS)
 	$(RLN) $(LINKFLAGS) -o $@ $(JAG_OBJS) $(LIB_GCC)
+
+# Docker Jaguar Build Rule
+docker-jaguar:
+	@echo "Building Jaguar ROM via Docker..."
+	docker build -t alpha-kinetics-dev -f .devcontainer/Dockerfile .
+	docker run --rm -v "$(CURDIR)":/workspaces/jag-kinetics -w /workspaces/jag-kinetics alpha-kinetics-dev make jaguar
 
 # PC Build Rule
 pc: $(PC_PROG)$(EXT)
