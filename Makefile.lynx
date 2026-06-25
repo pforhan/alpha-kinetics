@@ -1,0 +1,26 @@
+CXX = mos-lynx-bll-clang++
+CC = mos-lynx-bll-clang
+CFLAGS = -Isrc -Isrc/core -Isrc/platforms/lynx -O2
+CXXFLAGS = $(CFLAGS)
+
+SRCS = src/platforms/lynx/lynx_main.cpp \
+      src/platforms/lynx/lynx_platform.cpp \
+      src/core/ak_physics.c \
+      src/core/ak_demo_setup.c
+
+OBJS = $(SRCS:.c=.o)
+OBJS := $(OBJS:.cpp=.o)
+
+all: lynx_demo.bin
+
+lynx_demo.bin: $(OBJS)
+	$(CXX) $(OBJS) -o lynx_demo.bin
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+clean:
+	rm -f $(OBJS) lynx_demo.bin

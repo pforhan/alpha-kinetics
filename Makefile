@@ -36,9 +36,9 @@ endif
 # Targets
 #############################################################################
 
-.PHONY: all jaguar pc clean
+.PHONY: all jaguar pc clean lynx
 
-all: jaguar pc arduboy playdate
+all: jaguar pc arduboy playdate lynx
 
 # Jaguar Toolchain Definitions
 CC = m68k-atari-mint-gcc
@@ -115,7 +115,10 @@ playdate_device:
 	unset CC CFLAGS MACFLAGS LINKFLAGS AR; cmake -S src/platforms/playdate -B build/playdate_device -DDEVICE_BUILD=ON
 	unset CC CFLAGS MACFLAGS LINKFLAGS AR; $(MAKE) -C build/playdate_device
 
-# Pattern Rules
+# Lynx Build Rule
+lynx:
+	@echo "Building for Atari Lynx..."
+	$(MAKE) -f Makefile.lynx
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 

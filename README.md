@@ -1,6 +1,6 @@
 # Alpha Kinetics
 
-A portable, lightweight, fixed-point 2D physics engine written in C99. Designed for retro consoles and embedded systems (Atari Jaguar, Arduboy FX, Playdate).
+A portable, lightweight, fixed-point 2D physics engine written in C99. Designed for retro consoles and embedded systems (Atari Jaguar, Atari Lynx, Arduboy FX, Playdate).
 
 ## Features
 
@@ -24,6 +24,7 @@ A portable, lightweight, fixed-point 2D physics engine written in C99. Designed 
   - `jaguar/`: Atari Jaguar demo.
     - `rmvlib/`: Removers Video Library (Atari Jaguar).
     - `jlibc/`: Removers C Library (Atari Jaguar).
+  - `lynx/`: Atari Lynx demo.
   - `pc/`: Terminal-based ASCII simulation.
   - `arduboy/`: Arduboy FX demo boilerplate.
   - `playdate/`: Playdate C SDK demo boilerplate.
@@ -45,6 +46,17 @@ Quickly test logic in your terminal:
 make pc
 ./alpha_kinetics_pc
 ```
+
+### For Atari Lynx
+
+**Toolchain Requirements:**
+- **mos-lynx-bll-clang**: [llvm-mos SDK](https://github.com/llvm-mos/llvm-mos-sdk).
+
+**Build using Make:**
+```bash
+make lynx
+```
+Produces `lynx_demo.bin`.
 
 ### For Atari Jaguar
 
